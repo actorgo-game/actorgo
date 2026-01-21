@@ -1,4 +1,4 @@
-package cherryCode
+package ccode
 
 const (
 	OK                    int32 = 0  // is ok
