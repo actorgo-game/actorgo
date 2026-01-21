@@ -1,8 +1,9 @@
 # 🍒 欢迎使用 actorgo！
 
-![actorgo logo](https://github.com/actorgo-game/actorgo?tab=readme-ov-file)
-![actorgo license](https://github.com/actorgo-game/actorgo/blob/master/LICENSE)
-![go version](https://go.dev/)
+![actorgo logo](https://img.shields.io/badge/actorgo--game-actorgo-red)
+![actorgo license](https://img.shields.io/github/license/actorgo-game/actorgo)
+![go version](https://img.shields.io/github/go-mod/go-version/actorgo-game/actorgo)
+![actorgo tag](https://img.shields.io/github/v/tag/actorgo-game/actorgo)
 
 - **高性能分布式的 Golang 游戏服务器框架**
 - 采用 Golang + Actor Model 构建，具备高性能、可伸缩等特性
