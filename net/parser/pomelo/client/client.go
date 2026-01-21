@@ -125,10 +125,10 @@ func (p *Client) Disconnect() {
 		close(p.closeChan)
 		err := p.conn.Close()
 		if err != nil {
-			clog.Error(err)
+			clog.Error(err.Error())
 		}
 
-		clog.Debugf("[%s] is disconnect.", p.TagName)
+		clog.Debug("[%s] is disconnect.", p.TagName)
 	}
 }
 
@@ -259,7 +259,7 @@ func (p *Client) handlePackets() {
 				{
 					m, err := pomeloMessage.Decode(pkg.Data())
 					if err != nil {
-						clog.Warnf("[%s] error decoding msg from sv: %s", p.TagName, string(m.Data))
+						clog.Warn("[%s] error decoding msg from sv: %s", p.TagName, string(m.Data))
 						return
 					}
 
@@ -267,7 +267,7 @@ func (p *Client) handlePackets() {
 				}
 			case pomeloPacket.Kick:
 				{
-					clog.Warnf("[%s] got kick packet from the server! disconnecting...", p.TagName)
+					clog.Warn("[%s] got kick packet from the server! disconnecting...", p.TagName)
 					p.Disconnect()
 				}
 			}
@@ -297,14 +297,14 @@ func (p *Client) handleData() {
 		case <-heartBeatTicker.C:
 			{
 				if err := p.SendRaw(pomeloPacket.Heartbeat, []byte{}); err != nil {
-					clog.Warnf("[%s] packet encode error. %s", p.TagName, err.Error())
+					clog.Warn("[%s] packet encode error. %s", p.TagName, err.Error())
 					return
 				}
 			}
 		case bytes := <-p.chWrite:
 			{
 				if _, err := p.conn.Write(bytes); err != nil {
-					clog.Warnf("[%s] write packet fail. %s", p.TagName, err.Error())
+					clog.Warn("[%s] write packet fail. %s", p.TagName, err.Error())
 					return
 				}
 			}
@@ -317,14 +317,14 @@ func (p *Client) handleData() {
 func (p *Client) processMessage(msg *pomeloMessage.Message) {
 	defer func() {
 		if r := recover(); r != nil {
-			clog.Errorf("[%s] recover in executor. %s", p.TagName, string(debug.Stack()))
+			clog.Error("[%s] recover in executor. %s", p.TagName, string(debug.Stack()))
 		}
 	}()
 
 	if msg.Type == pomeloMessage.Response {
 		value, found := p.responseMaps.LoadAndDelete(msg.ID)
 		if !found {
-			clog.Warnf("callback not found. [msg = %v]", msg)
+			clog.Warn("callback not found. [msg = %v]", msg)
 			return
 		}
 
@@ -351,7 +351,7 @@ func (p *Client) processMessage(msg *pomeloMessage.Message) {
 func (p *Client) getPackets() ([]*pomeloPacket.Packet, error) {
 	packets, isBreak, err := pomeloPacket.Read(p.conn)
 	if err != nil {
-		clog.Errorf("[%s] error decoding packet from server: %s", p.TagName, err.Error())
+		clog.Error("[%s] error decoding packet from server: %s", p.TagName, err.Error())
 	}
 
 	if isBreak {

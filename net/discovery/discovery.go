@@ -22,7 +22,7 @@ func Register(discovery cfacade.IDiscovery) {
 	}
 
 	if discovery.Name() == "" {
-		clog.Fatalf("Discovery name is empty. %T", discovery)
+		clog.Fatal("Discovery name is empty. %T", discovery)
 		return
 	}
 	discoveryMap[discovery.Name()] = discovery

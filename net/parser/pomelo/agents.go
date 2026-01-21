@@ -59,7 +59,7 @@ func Unbind(sid cfacade.SID) {
 		uidMap.Delete(agent.UID())
 	}
 
-	clog.Debugf("Unbind agent. sid = %s", sid)
+	clog.Debug("Unbind agent. sid = %s", sid)
 }
 
 func GetAgentWithSIDAndDel(sid cfacade.SID, isDel bool) (*Agent, bool) {

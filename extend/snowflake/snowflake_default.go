@@ -28,10 +28,10 @@ func SetDefaultNode(nodeValue int64) {
 	defaultNode, err = NewNode(nodeValue)
 	if err != nil {
 		clog.Warn(err)
-		clog.Warnf("create default snowflake node fail. nodeValue = %d", nodeValue)
+		clog.Warn("create default snowflake node fail. nodeValue = %d", nodeValue)
 	}
 
-	clog.Infof("[snowflake] nodeValue = %d, nodeMax = %d", nodeValue, nodeMax)
+	clog.Info("[snowflake] nodeValue = %d, nodeMax = %d", nodeValue, nodeMax)
 }
 
 func Next() ID {

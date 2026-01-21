@@ -49,7 +49,7 @@ func (p *actor) Load(app cfacade.IApplication) {
 
 	//  Create agent actor
 	if _, err := app.ActorSystem().CreateActor(p.agentActorID, p); err != nil {
-		clog.Panicf("Create agent actor fail. err = %+v", err)
+		clog.Panic("Create agent actor fail. err = %+v", err)
 	}
 
 	for _, connector := range p.connectors {
@@ -114,7 +114,7 @@ func (p *actor) response(rsp *cproto.PomeloResponse) {
 	agent, found := GetAgent(rsp.Sid)
 	if !found {
 		if clog.PrintLevel(zapcore.DebugLevel) {
-			clog.Debugf("[response] Not found agent. [rsp = %+v]", rsp)
+			clog.Debug("[response] Not found agent. [rsp = %+v]", rsp)
 		}
 		return
 	}

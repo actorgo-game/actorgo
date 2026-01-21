@@ -38,11 +38,11 @@ func (p *Component) Init() {
 
 	discovery, found := discoveryMap[mode]
 	if discovery == nil || !found {
-		clog.Errorf("mode = %s property not found in discovery config.", mode)
+		clog.Error("mode = %s property not found in discovery config.", mode)
 		return
 	}
 
-	clog.Infof("Select discovery [mode = %s].", mode)
+	clog.Info("Select discovery [mode = %s].", mode)
 	p.IDiscovery = discovery
 	p.IDiscovery.Load(p.App())
 }

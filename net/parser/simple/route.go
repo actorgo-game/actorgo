@@ -46,7 +46,7 @@ func DefaultDataRoute(agent *Agent, msg *Message, route *NodeRoute) {
 	}
 
 	if !session.IsBind() {
-		clog.Warnf("[sid = %s,uid = %d] Session is not bind with UID. failed to forward message.[route = %+v]",
+		clog.Warn("[sid = %s,uid = %d] Session is not bind with UID. failed to forward message.[route = %+v]",
 			agent.SID(),
 			agent.UID(),
 			route,

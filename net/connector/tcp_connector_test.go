@@ -14,7 +14,7 @@ func TestNewTCPConnector(t *testing.T) {
 
 	tcp := NewTCP(":9071")
 	tcp.OnConnect(func(conn net.Conn) {
-		clog.Infof("new net.Conn = %s", conn.RemoteAddr())
+		clog.Info("new net.Conn = %s", conn.RemoteAddr())
 	})
 
 	tcp.Start()

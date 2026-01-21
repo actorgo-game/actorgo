@@ -17,7 +17,7 @@ import (
 
 func InvokeLocalFunc(app cfacade.IApplication, fi *creflect.FuncInfo, m *cfacade.Message) {
 	if app == nil {
-		clog.Errorf("[InvokeLocalFunc] app is nil. [message = %+v]", m)
+		clog.Error("[InvokeLocalFunc] app is nil. [message = %+v]", m)
 		return
 	}
 
@@ -31,7 +31,7 @@ func InvokeLocalFunc(app cfacade.IApplication, fi *creflect.FuncInfo, m *cfacade
 
 func InvokeRemoteFunc(app cfacade.IApplication, fi *creflect.FuncInfo, m *cfacade.Message) {
 	if app == nil {
-		clog.Errorf("[InvokeRemoteFunc] app is nil. [message = %+v]", m)
+		clog.Error("[InvokeRemoteFunc] app is nil. [message = %+v]", m)
 		return
 	}
 
@@ -56,7 +56,7 @@ func InvokeRemoteFunc(app cfacade.IApplication, fi *creflect.FuncInfo, m *cfacad
 			retResponse(m, &cproto.Response{
 				Code: ccode.RPCRemoteExecuteError,
 			})
-			clog.Errorf("[InvokeRemoteFunc] invoke error. [message = %+v, err = %s]", m, errString)
+			clog.Error("[InvokeRemoteFunc] invoke error. [message = %+v, err = %s]", m, errString)
 		})
 	} else {
 		cutils.Try(func() {
@@ -72,7 +72,7 @@ func InvokeRemoteFunc(app cfacade.IApplication, fi *creflect.FuncInfo, m *cfacad
 				m.ChanResult <- nil
 			}
 
-			clog.Errorf("[InvokeRemoteFunc] invoke error.[source = %s, target = %s -> %s, funcType = %v, err = %+v]",
+			clog.Error("[InvokeRemoteFunc] invoke error.[source = %s, target = %s -> %s, funcType = %v, err = %+v]",
 				m.Source,
 				m.Target,
 				m.FuncName,

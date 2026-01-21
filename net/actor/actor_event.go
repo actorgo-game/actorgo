@@ -58,7 +58,7 @@ func (p *actorEvent) Pop() cfacade.IEventData {
 
 	eventData, ok := v.(cfacade.IEventData)
 	if !ok {
-		clog.Warnf("Convert to IEventData fail. v = %+v", v)
+		clog.Warn("Convert to IEventData fail. v = %+v", v)
 		return nil
 	}
 
@@ -68,7 +68,7 @@ func (p *actorEvent) Pop() cfacade.IEventData {
 func (p *actorEvent) invokeFunc(data cfacade.IEventData) {
 	funcList, found := p.funcMap[data.Name()]
 	if !found {
-		clog.Warnf("[%s] Event not found. [data = %+v]",
+		clog.Warn("[%s] Event not found. [data = %+v]",
 			p.thisActor.Path(),
 			data,
 		)
@@ -77,7 +77,7 @@ func (p *actorEvent) invokeFunc(data cfacade.IEventData) {
 
 	defer func() {
 		if rev := recover(); rev != nil {
-			clog.Errorf("[%s] Event invoke error. [data = %+v]",
+			clog.Error("[%s] Event invoke error. [data = %+v]",
 				p.thisActor.Path(),
 				data,
 			)

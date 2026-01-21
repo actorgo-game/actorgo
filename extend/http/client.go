@@ -35,7 +35,7 @@ func GET(httpURL string, values ...map[string]string) ([]byte, *http.Response, e
 	defer func(body io.ReadCloser) {
 		e := body.Close()
 		if e != nil {
-			clog.Warnf("HTTP GET [url = %s], error = %s", httpURL, e)
+			clog.Warn("HTTP GET [url = %s], error = %s", httpURL, e)
 		}
 	}(rsp.Body)
 
@@ -59,7 +59,7 @@ func POST(httpURL string, values map[string]string) ([]byte, *http.Response, err
 	defer func(body io.ReadCloser) {
 		e := body.Close()
 		if e != nil {
-			clog.Warnf("HTTP POST [url = %s], error = %s", httpURL, e)
+			clog.Warn("HTTP POST [url = %s], error = %s", httpURL, e)
 		}
 	}(rsp.Body)
 
@@ -87,7 +87,7 @@ func PostJSON(httpURL string, values interface{}) ([]byte, *http.Response, error
 	defer func(body io.ReadCloser) {
 		e := body.Close()
 		if e != nil {
-			clog.Warnf("HTTP PostJSON [url = %s], error = %s", httpURL, e)
+			clog.Warn("HTTP PostJSON [url = %s], error = %s", httpURL, e)
 		}
 	}(rsp.Body)
 

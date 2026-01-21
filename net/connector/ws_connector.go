@@ -72,12 +72,12 @@ func NewWS(address string, opts ...Option) *WSConnector {
 func (w *WSConnector) Start() {
 	listener, err := w.GetListener(w.certFile, w.keyFile, w.address)
 	if err != nil {
-		clog.Fatalf("failed to listen: %s", err)
+		clog.Fatal("failed to listen: %s", err)
 	}
 
-	clog.Infof("Websocket connector listening at Address %s", w.address)
+	clog.Info("Websocket connector listening at Address %s", w.address)
 	if w.certFile != "" || w.keyFile != "" {
-		clog.Infof("certFile = %s, keyFile = %s", w.certFile, w.keyFile)
+		clog.Info("certFile = %s, keyFile = %s", w.certFile, w.keyFile)
 	}
 
 	w.Connector.Start()
@@ -98,7 +98,7 @@ func (w *WSConnector) SetUpgrade(upgrade *websocket.Upgrader) {
 func (w *WSConnector) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	wsConn, err := w.upgrade.Upgrade(rw, r, nil)
 	if err != nil {
-		clog.Infof("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error())
+		clog.Info("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error())
 		return
 	}
 

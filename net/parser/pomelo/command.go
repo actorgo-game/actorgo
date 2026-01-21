@@ -70,23 +70,23 @@ func (p *Command) setHandshakeBytes() {
 
 	handshakeBytes, err := jsoniter.Marshal(handshakeData)
 	if err != nil {
-		clog.Error(err)
+		clog.Error(err.Error())
 		return
 	}
 
 	p.handshakeBytes, err = ppacket.Encode(ppacket.Handshake, handshakeBytes)
 	if err != nil {
-		clog.Error(err)
+		clog.Error(err.Error())
 		return
 	}
 
-	clog.Infof("[initCommand] handshake data = %v", handshakeData)
+	clog.Info("[initCommand] handshake data = %v", handshakeData)
 }
 
 func (p *Command) setHeartbeatBytes() {
 	heartbeatBytes, err := ppacket.Encode(ppacket.Heartbeat, nil)
 	if err != nil {
-		clog.Error(err)
+		clog.Error(err.Error())
 		return
 	}
 
@@ -114,7 +114,7 @@ func handshakeCommand(agent *Agent, _ *ppacket.Packet) {
 	agent.SendRaw(cmd.handshakeBytes)
 
 	if clog.PrintLevel(zapcore.DebugLevel) {
-		clog.Debugf("[sid = %s,uid = %d] Request handshake. [address = %s]",
+		clog.Debug("[sid = %s,uid = %d] Request handshake. [address = %s]",
 			agent.SID(),
 			agent.UID(),
 			agent.RemoteAddr(),
@@ -126,7 +126,7 @@ func handshakeACKCommand(agent *Agent, _ *ppacket.Packet) {
 	agent.SetState(AgentWorking)
 
 	if clog.PrintLevel(zapcore.DebugLevel) {
-		clog.Debugf("[sid = %s,uid = %d] request handshakeACK. [address = %s]",
+		clog.Debug("[sid = %s,uid = %d] request handshakeACK. [address = %s]",
 			agent.SID(),
 			agent.UID(),
 			agent.RemoteAddr(),
@@ -141,7 +141,7 @@ func heartbeatCommand(agent *Agent, _ *ppacket.Packet) {
 func dataCommand(agent *Agent, pkg *ppacket.Packet) {
 	if agent.State() != AgentWorking {
 		if clog.PrintLevel(zapcore.DebugLevel) {
-			clog.Warnf("[sid = %s,uid = %d] Data State is not working. [state = %d]",
+			clog.Warn("[sid = %s,uid = %d] Data State is not working. [state = %d]",
 				agent.SID(),
 				agent.UID(),
 				agent.State(),
@@ -153,7 +153,7 @@ func dataCommand(agent *Agent, pkg *ppacket.Packet) {
 	msg, err := pmessage.Decode(pkg.Data())
 	if err != nil {
 		if clog.PrintLevel(zapcore.DebugLevel) {
-			clog.Warnf("[sid = %s,uid = %d] Data message decode error. [data = %s, error = %s]",
+			clog.Warn("[sid = %s,uid = %d] Data message decode error. [data = %s, error = %s]",
 				agent.SID(),
 				agent.UID(),
 				pkg.Data(),
@@ -166,7 +166,7 @@ func dataCommand(agent *Agent, pkg *ppacket.Packet) {
 	route, err := pmessage.DecodeRoute(msg.Route)
 	if err != nil {
 		if clog.PrintLevel(zapcore.DebugLevel) {
-			clog.Warnf("[sid = %s,uid = %d] Data Message decode route error. [data = %s, error = %s]",
+			clog.Warn("[sid = %s,uid = %d] Data Message decode route error. [data = %s, error = %s]",
 				agent.SID(),
 				agent.UID(),
 				pkg.Data(),

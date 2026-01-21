@@ -78,7 +78,7 @@ func NewLogger(refLoggerName string, opts ...zap.Option) *ActorLogger {
 
 	config, err := NewConfigWithName(refLoggerName)
 	if err != nil {
-		Panicf("New Config fail. err = %v", err)
+		Panic("New Config fail. err = %v", err)
 	}
 
 	logger := NewConfigLogger(config, opts...)
@@ -176,73 +176,39 @@ func Enable(level zapcore.Level) bool {
 	return DefaultLogger.Desugar().Core().Enabled(level)
 }
 
-func Debug(args ...interface{}) {
-	DefaultLogger.Debug(args...)
-}
-
-func Info(args ...interface{}) {
-	DefaultLogger.Info(args...)
-}
-
-// Warn uses fmt.Sprint to construct and log a message.
-func Warn(args ...interface{}) {
-	DefaultLogger.Warn(args...)
-}
-
-// Error uses fmt.Sprint to construct and log a message.
-func Error(args ...interface{}) {
-	DefaultLogger.Error(args...)
-}
-
-// DPanic uses fmt.Sprint to construct and log a message. In development, the
-// logger then panics. (See DPanicLevel for details.)
-func DPanic(args ...interface{}) {
-	DefaultLogger.DPanic(args...)
-}
-
-// Panic uses fmt.Sprint to construct and log a message, then panics.
-func Panic(args ...interface{}) {
-	DefaultLogger.Panic(args...)
-}
-
-// Fatal uses fmt.Sprint to construct and log a message, then calls os.Exit.
-func Fatal(args ...interface{}) {
-	DefaultLogger.Fatal(args...)
-}
-
-// Debugf uses fmt.Sprintf to log a templated message.
-func Debugf(template string, args ...interface{}) {
+// Debug uses fmt.Sprintf to log a templated message.
+func Debug(template string, args ...interface{}) {
 	DefaultLogger.Debugf(template, args...)
 }
 
-// Infof uses fmt.Sprintf to log a templated message.
-func Infof(template string, args ...interface{}) {
+// Info uses fmt.Sprintf to log a templated message.
+func Info(template string, args ...interface{}) {
 	DefaultLogger.Infof(template, args...)
 }
 
-// Warnf uses fmt.Sprintf to log a templated message.
-func Warnf(template string, args ...interface{}) {
+// Warn uses fmt.Sprintf to log a templated message.
+func Warn(template string, args ...interface{}) {
 	DefaultLogger.Warnf(template, args...)
 }
 
-// Errorf uses fmt.Sprintf to log a templated message.
-func Errorf(template string, args ...interface{}) {
+// Error uses fmt.Sprintf to log a templated message.
+func Error(template string, args ...interface{}) {
 	DefaultLogger.Errorf(template, args...)
 }
 
-// DPanicf uses fmt.Sprintf to log a templated message. In development, the
+// DPanic uses fmt.Sprintf to log a templated message. In development, the
 // logger then panics. (See DPanicLevel for details.)
-func DPanicf(template string, args ...interface{}) {
+func DPanic(template string, args ...interface{}) {
 	DefaultLogger.DPanicf(template, args...)
 }
 
-// Panicf uses fmt.Sprintf to log a templated message, then panics.
-func Panicf(template string, args ...interface{}) {
+// Panic uses fmt.Sprintf to log a templated message, then panics.
+func Panic(template string, args ...interface{}) {
 	DefaultLogger.Panicf(template, args...)
 }
 
-// Fatalf uses fmt.Sprintf to log a templated message, then calls os.Exit.
-func Fatalf(template string, args ...interface{}) {
+// Fatal uses fmt.Sprintf to log a templated message, then calls os.Exit.
+func Fatal(template string, args ...interface{}) {
 	DefaultLogger.Fatalf(template, args...)
 }
 

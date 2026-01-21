@@ -71,7 +71,7 @@ func (p *Cluster) localProcess() {
 		defer packet.Recycle()
 
 		if err != nil {
-			clog.Warnf("[localProcess] Unmarshal fail. [subject = %s, %s, err = %s]",
+			clog.Warn("[localProcess] Unmarshal fail. [subject = %s, %s, err = %s]",
 				natsMsg.Subject,
 				packet.PrintLog(),
 				err,
@@ -86,7 +86,7 @@ func (p *Cluster) localProcess() {
 	conn := cnats.GetConnect()
 	err := conn.Subscribe(p.localSubject, process)
 	if err != nil {
-		clog.Errorf("[localProcess] Create subscribe fail. [subject = %s, err = %v]",
+		clog.Error("[localProcess] Create subscribe fail. [subject = %s, err = %v]",
 			p.localSubject,
 			err,
 		)
@@ -99,7 +99,7 @@ func (p *Cluster) remoteProcess() {
 		defer packet.Recycle()
 
 		if err != nil {
-			clog.Warnf("[remoteProcess] Unmarshal fail. [subject = %s, %s, err = %v]",
+			clog.Warn("[remoteProcess] Unmarshal fail. [subject = %s, %s, err = %v]",
 				natsMsg.Subject,
 				packet.PrintLog(),
 				err,
@@ -120,7 +120,7 @@ func (p *Cluster) remoteProcess() {
 	conn := cnats.GetConnect()
 	err := conn.Subscribe(p.remoteSubject, process)
 	if err != nil {
-		clog.Errorf("[remoteProcess] Create subscribe fail. [subject = %s, err = %v]",
+		clog.Error("[remoteProcess] Create subscribe fail. [subject = %s, err = %v]",
 			p.remoteSubject,
 			err,
 		)
@@ -133,7 +133,7 @@ func (p *Cluster) remoteTypeProcess() {
 		defer packet.Recycle()
 
 		if err != nil {
-			clog.Warnf("[remoteTypeProcess] Unmarshal fail. [subject = %s, %s, err = %v]",
+			clog.Warn("[remoteTypeProcess] Unmarshal fail. [subject = %s, %s, err = %v]",
 				natsMsg.Subject,
 				packet.PrintLog(),
 				err,
@@ -149,7 +149,7 @@ func (p *Cluster) remoteTypeProcess() {
 	conn := cnats.GetConnect()
 	err := conn.Subscribe(p.remoteTypeSubject, process)
 	if err != nil {
-		clog.Errorf("[remoteTypeProcess] Create subscribe fail. [subject = %s, err = %v]",
+		clog.Error("[remoteTypeProcess] Create subscribe fail. [subject = %s, err = %v]",
 			p.remoteSubject,
 			err,
 		)
@@ -161,7 +161,7 @@ func (p *Cluster) PublishLocal(nodeID string, cpacket *cproto.ClusterPacket) err
 
 	nodeType, err := p.app.Discovery().GetType(nodeID)
 	if err != nil {
-		clog.Warnf("[PublishLocal] Get node type fail. [nodeID = %s, packet = %s, err = %v]",
+		clog.Warn("[PublishLocal] Get node type fail. [nodeID = %s, packet = %s, err = %v]",
 			nodeID,
 			cpacket.PrintLog(),
 			err,
@@ -171,7 +171,7 @@ func (p *Cluster) PublishLocal(nodeID string, cpacket *cproto.ClusterPacket) err
 
 	bytes, err := proto.Marshal(cpacket)
 	if err != nil {
-		clog.Warnf("[PublishLocal] Marshal error. [nodeID = %s, packet = %s, err = %v]",
+		clog.Warn("[PublishLocal] Marshal error. [nodeID = %s, packet = %s, err = %v]",
 			nodeID,
 			cpacket.PrintLog(),
 			err,
@@ -182,7 +182,7 @@ func (p *Cluster) PublishLocal(nodeID string, cpacket *cproto.ClusterPacket) err
 	subject := GetLocalSubject(p.prefix, nodeType, nodeID)
 	err = cnats.GetConnect().Publish(subject, bytes)
 	if err != nil {
-		clog.Warnf("[PublishLocal] Nats publish fail. [nodeID = %s, %s, err = %v]",
+		clog.Warn("[PublishLocal] Nats publish fail. [nodeID = %s, %s, err = %v]",
 			nodeID,
 			cpacket.PrintLog(),
 			err,
@@ -199,7 +199,7 @@ func (p *Cluster) PublishRemote(nodeID string, cpacket *cproto.ClusterPacket) er
 
 	nodeType, err := p.app.Discovery().GetType(nodeID)
 	if err != nil {
-		clog.Warnf("[PublishRemote] Get node type fail. [nodeID = %s, %s, err = %v]",
+		clog.Warn("[PublishRemote] Get node type fail. [nodeID = %s, %s, err = %v]",
 			nodeID,
 			cpacket.PrintLog(),
 			err,
@@ -209,7 +209,7 @@ func (p *Cluster) PublishRemote(nodeID string, cpacket *cproto.ClusterPacket) er
 
 	bytes, err := proto.Marshal(cpacket)
 	if err != nil {
-		clog.Warnf("[PublishRemote] Marshal error. [nodeID = %s, packet = %s, err = %v]",
+		clog.Warn("[PublishRemote] Marshal error. [nodeID = %s, packet = %s, err = %v]",
 			nodeID,
 			cpacket.PrintLog(),
 			err,
@@ -220,7 +220,7 @@ func (p *Cluster) PublishRemote(nodeID string, cpacket *cproto.ClusterPacket) er
 	subject := GetRemoteSubject(p.prefix, nodeType, nodeID)
 	err = cnats.GetConnect().Publish(subject, bytes)
 	if err != nil {
-		clog.Warnf("[PublishRemote] Nats publish fail. [nodeID = %s, %s, err = %v]",
+		clog.Warn("[PublishRemote] Nats publish fail. [nodeID = %s, %s, err = %v]",
 			nodeID,
 			cpacket.PrintLog(),
 			err,
@@ -237,7 +237,7 @@ func (p *Cluster) PublishRemoteType(nodeType string, cpacket *cproto.ClusterPack
 
 	bytes, err := proto.Marshal(cpacket)
 	if err != nil {
-		clog.Warnf("[PublishRemoteType] Marshal error. [nodeType = %s, packet = %s, err = %v]",
+		clog.Warn("[PublishRemoteType] Marshal error. [nodeType = %s, packet = %s, err = %v]",
 			nodeType,
 			cpacket.PrintLog(),
 			err,
@@ -256,7 +256,7 @@ func (p *Cluster) PublishRemoteType(nodeType string, cpacket *cproto.ClusterPack
 	subject := GetRemoteTypeSubject(p.prefix, nodeType)
 	err = cnats.GetConnect().Publish(subject, bytes)
 	if err != nil {
-		clog.Warnf("[PublishRemoteType] Nats publish fail. [nodeType = %s, %s, err = %v]",
+		clog.Warn("[PublishRemoteType] Nats publish fail. [nodeType = %s, %s, err = %v]",
 			nodeType,
 			cpacket.PrintLog(),
 			err,
@@ -273,7 +273,7 @@ func (p *Cluster) RequestRemote(nodeID string, cpacket *cproto.ClusterPacket, ti
 
 	nodeType, err := p.app.Discovery().GetType(nodeID)
 	if err != nil {
-		clog.Warnf("[RequestRemote] Get node type fail. [nodeID = %s, %s, err = %v]",
+		clog.Warn("[RequestRemote] Get node type fail. [nodeID = %s, %s, err = %v]",
 			nodeID,
 			cpacket.PrintLog(),
 			err,
@@ -284,7 +284,7 @@ func (p *Cluster) RequestRemote(nodeID string, cpacket *cproto.ClusterPacket, ti
 
 	msg, err := proto.Marshal(cpacket)
 	if err != nil {
-		clog.Warnf("[RequestRemote] Marshal fail. [nodeID = %s, %s, err = %v]",
+		clog.Warn("[RequestRemote] Marshal fail. [nodeID = %s, %s, err = %v]",
 			nodeID,
 			cpacket.PrintLog(),
 			err,
@@ -296,7 +296,7 @@ func (p *Cluster) RequestRemote(nodeID string, cpacket *cproto.ClusterPacket, ti
 	subject := GetRemoteSubject(p.prefix, nodeType, nodeID)
 	natsData, err := cnats.GetConnect().RequestSync(subject, msg, timeout...)
 	if err != nil {
-		clog.Warnf("[RequestRemote] Nats request fail. [nodeID = %s, %s, err = %v]",
+		clog.Warn("[RequestRemote] Nats request fail. [nodeID = %s, %s, err = %v]",
 			nodeID,
 			cpacket.PrintLog(),
 			err,
@@ -307,7 +307,7 @@ func (p *Cluster) RequestRemote(nodeID string, cpacket *cproto.ClusterPacket, ti
 
 	rsp := &cproto.Response{}
 	if err = proto.Unmarshal(natsData, rsp); err != nil {
-		clog.Warnf("[RequestRemote] unmarshal fail. [nodeID = %s, %s, rsp = %v, err = %v]",
+		clog.Warn("[RequestRemote] unmarshal fail. [nodeID = %s, %s, rsp = %v, err = %v]",
 			nodeID,
 			cpacket.PrintLog(),
 			rsp,

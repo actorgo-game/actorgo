@@ -40,12 +40,12 @@ func (n *DiscoveryDefault) Load(_ cfacade.IApplication) {
 
 			nodeID := item.Get("node_id").ToString()
 			if nodeID == "" {
-				clog.Errorf("nodeID is empty in nodeType = %s", nodeType)
+				clog.Error("nodeID is empty in nodeType = %s", nodeType)
 				break
 			}
 
 			if _, found := n.GetMember(nodeID); found {
-				clog.Errorf("nodeType = %s, nodeID = %s, duplicate nodeID", nodeType, nodeID)
+				clog.Error("nodeType = %s, nodeID = %s, duplicate nodeID", nodeType, nodeID)
 				break
 			}
 
@@ -139,7 +139,7 @@ func (n *DiscoveryDefault) GetMember(nodeID string) (cfacade.IMember, bool) {
 func (n *DiscoveryDefault) AddMember(member cfacade.IMember) {
 	_, loaded := n.memberMap.LoadOrStore(member.GetNodeID(), member)
 	if loaded {
-		clog.Warnf("Duplicate nodeID. [nodeType = %s, nodeID = %s, settings = %v]",
+		clog.Warn("Duplicate nodeID. [nodeType = %s, nodeID = %s, settings = %v]",
 			member.GetNodeType(),
 			member.GetNodeID(),
 			member.GetSettings(),
@@ -151,14 +151,14 @@ func (n *DiscoveryDefault) AddMember(member cfacade.IMember) {
 		listener(member)
 	}
 
-	clog.Debugf("AddMember new member. [member = %s]", member)
+	clog.Debug("AddMember new member. [member = %s]", member)
 }
 
 func (n *DiscoveryDefault) RemoveMember(nodeID string) {
 	value, loaded := n.memberMap.LoadAndDelete(nodeID)
 	if loaded {
 		member := value.(cfacade.IMember)
-		clog.Debugf("Remove member. [member = %s]", member)
+		clog.Debug("Remove member. [member = %s]", member)
 
 		for _, listener := range n.onRemoveListener {
 			listener(member)

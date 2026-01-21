@@ -21,7 +21,7 @@ func WithCert(certFile, keyFile string) Option {
 			o.certFile = certFile
 			o.keyFile = keyFile
 		} else {
-			clog.Errorf("Cert config error.[cert = %s,key = %s]", certFile, keyFile)
+			clog.Error("Cert config error.[cert = %s,key = %s]", certFile, keyFile)
 		}
 	}
 }

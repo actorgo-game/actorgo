@@ -51,12 +51,12 @@ func NewTCP(address string, opts ...Option) *TCPConnector {
 func (t *TCPConnector) Start() {
 	listener, err := t.GetListener(t.certFile, t.keyFile, t.address)
 	if err != nil {
-		clog.Fatalf("failed to listen: %s", err)
+		clog.Fatal("failed to listen: %s", err)
 	}
 
-	clog.Infof("Tcp connector listening at Address %s", t.address)
+	clog.Info("Tcp connector listening at Address %s", t.address)
 	if t.certFile != "" || t.keyFile != "" {
-		clog.Infof("certFile = %s, keyFile = %s", t.certFile, t.keyFile)
+		clog.Info("certFile = %s, keyFile = %s", t.certFile, t.keyFile)
 	}
 
 	t.Connector.Start()
@@ -64,7 +64,7 @@ func (t *TCPConnector) Start() {
 	for t.Running() {
 		conn, err := listener.Accept()
 		if err != nil {
-			clog.Errorf("Failed to accept TCP connection: %s", err.Error())
+			clog.Error("Failed to accept TCP connection: %s", err.Error())
 			continue
 		}
 

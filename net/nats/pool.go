@@ -47,7 +47,7 @@ func NewPool(replySubject string, config cfacade.ProfileJSON, isConnect bool) {
 			conn.Connect()
 		}
 
-		clog.Infof("Nats has connected! [poolSize = %d]", poolSize)
+		clog.Info("Nats has connected! [poolSize = %d]", poolSize)
 	}
 }
 
@@ -64,7 +64,7 @@ func ConnectClose() {
 	for _, conn := range connectPool {
 		conn.Close()
 	}
-	clog.Infof("Nats connect pool execute Close() [connectSize = %d]", connectSize)
+	clog.Info("Nats connect pool execute Close() [connectSize = %d]", connectSize)
 }
 
 func ReconnectDelay() time.Duration {

@@ -16,7 +16,7 @@ func TestNewWSConnector(t *testing.T) {
 
 	ws := NewWS(":9071")
 	ws.OnConnect(func(conn net.Conn) {
-		clog.Infof("new net.Conn = %s", conn.RemoteAddr())
+		clog.Info("new net.Conn = %s", conn.RemoteAddr())
 		go func() {
 			for {
 				buf := make([]byte, 2048)

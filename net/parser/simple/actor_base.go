@@ -18,7 +18,7 @@ func (p *ActorBase) Response(session *cproto.Session, mid uint32, v interface{})
 func Response(iActor cfacade.IActor, session *cproto.Session, mid uint32, v interface{}) {
 	data, err := iActor.App().Serializer().Marshal(v)
 	if err != nil {
-		clog.Warnf("[Response] Marshal error. v = %+v", v)
+		clog.Warn("[Response] Marshal error. v = %+v", v)
 		return
 	}
 

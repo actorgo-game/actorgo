@@ -19,7 +19,7 @@ func DefaultDataRoute(agent *Agent, route *pmessage.Route, msg *pmessage.Message
 	}
 
 	if !session.IsBind() {
-		clog.Warnf("[sid = %s,uid = %d] Session is not bind with UID. failed to forward message.[route = %s]",
+		clog.Warn("[sid = %s,uid = %d] Session is not bind with UID. failed to forward message.[route = %s]",
 			agent.SID(),
 			agent.UID(),
 			msg.Route,
@@ -35,7 +35,7 @@ func DefaultDataRoute(agent *Agent, route *pmessage.Route, msg *pmessage.Message
 	targetPath := cfacade.NewPath(member.GetNodeID(), route.HandleName())
 	err := ClusterLocalDataRoute(agent, session, route, msg, member.GetNodeID(), targetPath)
 	if err != nil {
-		clog.Warnf("[sid = %s,uid = %d,route = %s] cluster local data error. err = %v",
+		clog.Warn("[sid = %s,uid = %d,route = %s] cluster local data error. err = %v",
 			agent.SID(),
 			agent.UID(),
 			msg.Route,

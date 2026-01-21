@@ -51,7 +51,7 @@ func (p *Connector) Stop() {
 	p.running = false
 
 	if err := p.listener.Close(); err != nil {
-		clog.Errorf("Failed to stop: %s", err)
+		clog.Error("Failed to stop: %s", err)
 	}
 }
 
@@ -68,7 +68,7 @@ func (p *Connector) GetListener(certFile, keyFile, address string) (net.Listener
 
 	crt, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		clog.Fatalf("failed to listen: %s", err.Error())
+		clog.Fatal("failed to listen: %s", err.Error())
 	}
 
 	tlsCfg := &tls.Config{

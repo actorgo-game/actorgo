@@ -60,7 +60,7 @@ func (p *Connect) Connect() {
 	for {
 		conn, err := nats.Connect(p.address, p.natsOptions()...)
 		if err != nil {
-			clog.Warnf("[id = %d] Nats connect fail! retrying in 3 seconds. err = %s", p.id, err)
+			clog.Warn("[id = %d] Nats connect fail! retrying in 3 seconds. err = %s", p.id, err)
 			time.Sleep(3 * time.Second)
 			continue
 		}
@@ -95,7 +95,7 @@ func (p *Connect) statistics() {
 		for range ticker.C {
 			for _, sub := range p.subs {
 				if dropped, err := sub.Dropped(); err != nil {
-					clog.Errorf("Dropped messages. [subject = %s, dropped = %d, err = %v]",
+					clog.Error("Dropped messages. [subject = %s, dropped = %d, err = %v]",
 						sub.Subject,
 						dropped,
 						err,
@@ -104,7 +104,7 @@ func (p *Connect) statistics() {
 			}
 
 			stats := p.Stats()
-			clog.Debugf("[Statistics] InMsgs = %d, OutMsgs = %d, InBytes = %d, OutBytes = %d, Reconnects = %d",
+			clog.Debug("[Statistics] InMsgs = %d, OutMsgs = %d, InBytes = %d, OutBytes = %d, Reconnects = %d",
 				stats.InMsgs,
 				stats.OutMsgs,
 				stats.InBytes,
@@ -123,7 +123,7 @@ func (p *Connect) initReplySubscribe() {
 	err := p.Subscribe(p.reply, func(msg *nats.Msg) {
 		reqID := msg.Header.Get(REQ_ID)
 		if reqID == "" {
-			clog.Infof("header = %v, subject = %v", msg.Header, msg.Subject)
+			clog.Info("header = %v, subject = %v", msg.Header, msg.Subject)
 			return
 		}
 
@@ -138,7 +138,7 @@ func (p *Connect) initReplySubscribe() {
 	})
 
 	if err != nil {
-		clog.Warnf(" err = %v", err)
+		clog.Warn(" err = %v", err)
 		return
 	}
 }
@@ -186,7 +186,7 @@ func (p *Connect) RequestSync(subject string, data []byte, tod ...time.Duration)
 		return resp.Data, nil
 	case <-time.After(timeout):
 		p.waiters.Delete(reqID)
-		clog.Warnf("id = %d, reqID = %s", p.id, reqID)
+		clog.Warn("id = %d, reqID = %s", p.id, reqID)
 		close(ch)
 		return nil, cerror.ClusterRequestTimeout
 	}
@@ -231,22 +231,22 @@ func (p *options) natsOptions() []nats.Option {
 
 	opts = append(opts, nats.DisconnectErrHandler(func(conn *nats.Conn, err error) {
 		if err != nil {
-			clog.Warnf("Disconnect error. [error = %v]", err)
+			clog.Warn("Disconnect error. [error = %v]", err)
 		}
 	}))
 
 	opts = append(opts, nats.ReconnectHandler(func(nc *nats.Conn) {
-		clog.Warnf("Reconnected [%s]", nc.ConnectedUrl())
+		clog.Warn("Reconnected [%s]", nc.ConnectedUrl())
 	}))
 
 	opts = append(opts, nats.ClosedHandler(func(nc *nats.Conn) {
 		if nc.LastError() != nil {
-			clog.Infof("error = %v", nc.LastError())
+			clog.Info("error = %v", nc.LastError())
 		}
 	}))
 
 	opts = append(opts, nats.ErrorHandler(func(nc *nats.Conn, sub *nats.Subscription, err error) {
-		clog.Warnf("IsConnect = %v. %s on connection for subscription on %q",
+		clog.Warn("IsConnect = %v. %s on connection for subscription on %q",
 			nc.IsConnected(),
 			err.Error(),
 			sub.Subject,

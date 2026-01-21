@@ -58,7 +58,7 @@ func NewAgent(app cfacade.IApplication, conn net.Conn, session *cproto.Session) 
 	agent.SetLastAt()
 
 	if clog.PrintLevel(zapcore.DebugLevel) {
-		clog.Debugf("[sid = %s,uid = %d] Agent create. [count = %d, ip = %s]",
+		clog.Debug("[sid = %s,uid = %d] Agent create. [count = %d, ip = %s]",
 			agent.SID(),
 			agent.UID(),
 			Count(),
@@ -124,7 +124,7 @@ func (a *Agent) Run() {
 func (a *Agent) readChan() {
 	defer func() {
 		if clog.PrintLevel(zapcore.DebugLevel) {
-			clog.Debugf("[sid = %s,uid = %d] Agent read chan exit.",
+			clog.Debug("[sid = %s,uid = %d] Agent read chan exit.",
 				a.SID(),
 				a.UID(),
 			)
@@ -147,7 +147,7 @@ func (a *Agent) writeChan() {
 	ticker := time.NewTicker(heartbeatTime)
 	defer func() {
 		if clog.PrintLevel(zapcore.DebugLevel) {
-			clog.Debugf("[sid = %s,uid = %d] Agent write chan exit.", a.SID(), a.UID())
+			clog.Debug("[sid = %s,uid = %d] Agent write chan exit.", a.SID(), a.UID())
 		}
 
 		ticker.Stop()
@@ -166,7 +166,7 @@ func (a *Agent) writeChan() {
 				deadline := ctime.Now().Add(-heartbeatTime).Unix()
 				if a.lastAt < deadline {
 					if clog.PrintLevel(zapcore.DebugLevel) {
-						clog.Debugf("[sid = %s,uid = %d] Check heartbeat timeout.", a.SID(), a.UID())
+						clog.Debug("[sid = %s,uid = %d] Check heartbeat timeout.", a.SID(), a.UID())
 					}
 					return
 				}
@@ -195,7 +195,7 @@ func (a *Agent) closeProcess() {
 	a.Unbind()
 
 	if err := a.conn.Close(); err != nil {
-		clog.Debugf("[sid = %s,uid = %d] Agent connect closed. [error = %s]",
+		clog.Debug("[sid = %s,uid = %d] Agent connect closed. [error = %s]",
 			a.SID(),
 			a.UID(),
 			err,
@@ -203,7 +203,7 @@ func (a *Agent) closeProcess() {
 	}
 
 	if clog.PrintLevel(zapcore.DebugLevel) {
-		clog.Debugf("[sid = %s,uid = %d] Agent closed. [count = %d, ip = %s]",
+		clog.Debug("[sid = %s,uid = %d] Agent closed. [count = %d, ip = %s]",
 			a.SID(),
 			a.UID(),
 			Count(),
@@ -226,7 +226,7 @@ func (a *Agent) processPacket(msg *Message) {
 	nodeRoute, found := GetNodeRoute(msg.MID)
 	if !found {
 		if clog.PrintLevel(zapcore.DebugLevel) {
-			clog.Warnf("[sid = %s,uid = %d] Route not found, close connect! [message = %+v]",
+			clog.Warn("[sid = %s,uid = %d] Route not found, close connect! [message = %+v]",
 				a.SID(),
 				a.UID(),
 				msg,
@@ -257,7 +257,7 @@ func (p *pendingMessage) String() string {
 func (a *Agent) processPending(pending *pendingMessage) {
 	data, err := a.Serializer().Marshal(pending.payload)
 	if err != nil {
-		clog.Warnf("[sid = %s,uid = %d] Payload marshal error. [data = %s]",
+		clog.Warn("[sid = %s,uid = %d] Payload marshal error. [data = %s]",
 			a.SID(),
 			a.UID(),
 			pending.String(),
@@ -277,7 +277,7 @@ func (a *Agent) processPending(pending *pendingMessage) {
 
 func (a *Agent) sendPending(mid uint32, payload interface{}) {
 	if a.state == AgentClosed {
-		clog.Warnf("[sid = %s,uid = %d] Session is closed. [mid = %d, payload = %+v]",
+		clog.Warn("[sid = %s,uid = %d] Session is closed. [mid = %d, payload = %+v]",
 			a.SID(),
 			a.UID(),
 			mid,
@@ -287,7 +287,7 @@ func (a *Agent) sendPending(mid uint32, payload interface{}) {
 	}
 
 	if len(a.chPending) >= writeBacklog {
-		clog.Warnf("[sid = %s,uid = %d] send buffer exceed. [mid = %d, payload = %+v]",
+		clog.Warn("[sid = %s,uid = %d] send buffer exceed. [mid = %d, payload = %+v]",
 			a.SID(),
 			a.UID(),
 			mid,
@@ -307,7 +307,7 @@ func (a *Agent) sendPending(mid uint32, payload interface{}) {
 func (a *Agent) Response(mid uint32, v interface{}) {
 	a.sendPending(mid, v)
 	if clog.PrintLevel(zapcore.DebugLevel) {
-		clog.Debugf("[sid = %s,uid = %d] Response ok. [mid = %d, val = %+v]",
+		clog.Debug("[sid = %s,uid = %d] Response ok. [mid = %d, val = %+v]",
 			a.SID(),
 			a.UID(),
 			mid,
@@ -325,7 +325,7 @@ func (a *Agent) AddOnClose(fn OnCloseFunc) {
 func (a *Agent) Kick(mid uint32, reason interface{}, closed bool) {
 	bytes, err := a.Serializer().Marshal(reason)
 	if err != nil {
-		clog.Warnf("[sid = %s,uid = %d] Kick marshal fail. [reason = {%+v}, err = %s]",
+		clog.Warn("[sid = %s,uid = %d] Kick marshal fail. [reason = {%+v}, err = %s]",
 			a.SID(),
 			a.UID(),
 			reason,
@@ -335,7 +335,7 @@ func (a *Agent) Kick(mid uint32, reason interface{}, closed bool) {
 	// encode packet
 	pkg, err := pack(mid, bytes)
 	if err != nil {
-		clog.Warnf("[sid = %s,uid = %d] Kick packet encode error.[reason = %+v, err = %s]",
+		clog.Warn("[sid = %s,uid = %d] Kick packet encode error.[reason = %+v, err = %s]",
 			a.SID(),
 			a.UID(),
 			reason,
@@ -345,7 +345,7 @@ func (a *Agent) Kick(mid uint32, reason interface{}, closed bool) {
 	}
 
 	if clog.PrintLevel(zapcore.DebugLevel) {
-		clog.Debugf("[sid = %s,uid = %d] Kick ok. [reason = %+v, closed = %v]",
+		clog.Debug("[sid = %s,uid = %d] Kick ok. [reason = %+v, closed = %v]",
 			a.SID(),
 			a.UID(),
 			reason,

@@ -123,7 +123,7 @@ func (p *Actor) processLocal() {
 			if childActor, foundChild := p.findChildActor(m); foundChild {
 				childActor.PostLocal(m)
 			} else {
-				clog.Warnf("Child actor not found. path = %s", m.Target)
+				clog.Warn("Child actor not found. path = %s", m.Target)
 			}
 		}
 	} else {
@@ -155,7 +155,7 @@ func (p *Actor) processRemote() {
 			if childActor, foundChild := p.findChildActor(m); foundChild {
 				childActor.PostRemote(m)
 			} else {
-				clog.Warnf("Child actor not found. path = %s", m.Target)
+				clog.Warn("Child actor not found. path = %s", m.Target)
 			}
 		}
 	} else {
@@ -185,7 +185,7 @@ func (p *Actor) processTimer() {
 func (p *Actor) invokeFunc(mb *mailbox, app cfacade.IApplication, fn cfacade.InvokeFunc, m *cfacade.Message) {
 	funcInfo, found := mb.funcMap[m.FuncName]
 	if !found {
-		clog.Warnf("[%s] Function not found. [source = %s, target = %s -> %s]",
+		clog.Warn("[%s] Function not found. [source = %s, target = %s -> %s]",
 			mb.name,
 			m.Source,
 			m.Target,
@@ -196,7 +196,7 @@ func (p *Actor) invokeFunc(mb *mailbox, app cfacade.IApplication, fn cfacade.Inv
 
 	p.arrivalElapsed = m.PostTime - m.BuildTime
 	if p.arrivalElapsed > p.system.arrivalTimeOut {
-		clog.Warnf("[%s] Invoke timeout.[path = %s -> %s -> %s, postTime = %d, buildTime = %d, arrival = %dms]",
+		clog.Warn("[%s] Invoke timeout.[path = %s -> %s -> %s, postTime = %d, buildTime = %d, arrival = %dms]",
 			mb.name,
 			m.Source,
 			m.Target,
@@ -212,7 +212,7 @@ func (p *Actor) invokeFunc(mb *mailbox, app cfacade.IApplication, fn cfacade.Inv
 	defer func() {
 		p.executionElapsed = ctime.Now().ToMillisecond() - now
 		if p.executionElapsed > p.system.executionTimeout {
-			clog.Warnf("[%s] Invoke timeout.[source = %s, target = %s->%s, execution = %dms]",
+			clog.Warn("[%s] Invoke timeout.[source = %s, target = %s->%s, execution = %dms]",
 				mb.name,
 				m.Source,
 				m.Target,
@@ -222,7 +222,7 @@ func (p *Actor) invokeFunc(mb *mailbox, app cfacade.IApplication, fn cfacade.Inv
 		}
 
 		if rev := recover(); rev != nil {
-			clog.Errorf("[%s] Invoke error. [source = %s, target = %s->%s, type = %v]",
+			clog.Error("[%s] Invoke error. [source = %s, target = %s->%s, type = %v]",
 				mb.name,
 				m.Source,
 				m.Target,
@@ -238,7 +238,7 @@ func (p *Actor) invokeFunc(mb *mailbox, app cfacade.IApplication, fn cfacade.Inv
 func (p *Actor) findChildActor(m *cfacade.Message) (*Actor, bool) {
 	// 如果当前actor为子actor,则终止本次消息处理
 	if p.path.IsChild() {
-		clog.Warnf("[findChildActor] Child actor cannot be created again。[target = %s->%s]",
+		clog.Warn("[findChildActor] Child actor cannot be created again。[target = %s->%s]",
 			m.Target,
 			m.FuncName,
 		)
@@ -335,7 +335,7 @@ func (p *Actor) Exit() {
 	p.close <- struct{}{}
 
 	if clog.PrintLevel(zapcore.DebugLevel) {
-		clog.Debugf("[Exit] actor exit! path = %s", p.path)
+		clog.Debug("[Exit] actor exit! path = %s", p.path)
 	}
 }
 

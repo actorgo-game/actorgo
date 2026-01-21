@@ -22,12 +22,12 @@ func SetDictionary(dict map[string]uint16) {
 
 		// duplication check
 		if _, ok := routes[r]; ok {
-			clog.Errorf("duplicated route(route: %s, code: %d)", r, code)
+			clog.Error("duplicated route(route: %s, code: %d)", r, code)
 			return
 		}
 
 		if _, ok := codes[code]; ok {
-			clog.Errorf("duplicated route(route: %s, code: %d)", r, code)
+			clog.Error("duplicated route(route: %s, code: %d)", r, code)
 			return
 		}
 

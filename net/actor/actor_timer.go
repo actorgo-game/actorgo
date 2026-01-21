@@ -47,7 +47,7 @@ func (p *actorTimer) Pop() uint64 {
 
 	timerID, ok := v.(uint64)
 	if !ok {
-		clog.Warnf("Convert to Timer ID fail. v = %+v", v)
+		clog.Warn("Convert to Timer ID fail. v = %+v", v)
 		return 0
 	}
 
@@ -56,7 +56,7 @@ func (p *actorTimer) Pop() uint64 {
 
 func (p *actorTimer) Add(delay time.Duration, fn func(), async ...bool) uint64 {
 	if delay.Milliseconds() < 1 || fn == nil {
-		clog.Warnf("[ActorTimer] Add parameter error. delay = %+v", delay)
+		clog.Warn("[ActorTimer] Add parameter error. delay = %+v", delay)
 		return 0
 	}
 
@@ -64,7 +64,7 @@ func (p *actorTimer) Add(delay time.Duration, fn func(), async ...bool) uint64 {
 	timer := globalTimer.AddEveryFunc(newID, delay, p.timerTrigger(newID), async...)
 
 	if timer == nil {
-		clog.Warnf("[Add] error. delay = %+v", delay)
+		clog.Warn("[Add] error. delay = %+v", delay)
 		return 0
 	}
 
@@ -75,7 +75,7 @@ func (p *actorTimer) Add(delay time.Duration, fn func(), async ...bool) uint64 {
 
 func (p *actorTimer) AddOnce(delay time.Duration, fn func(), async ...bool) uint64 {
 	if delay.Milliseconds() < 1 || fn == nil {
-		clog.Warnf("[AddOnce] parameter error. delay = %+v", delay)
+		clog.Warn("[AddOnce] parameter error. delay = %+v", delay)
 		return 0
 	}
 
@@ -83,7 +83,7 @@ func (p *actorTimer) AddOnce(delay time.Duration, fn func(), async ...bool) uint
 	timer := globalTimer.AfterFunc(timerID, delay, p.timerTrigger(timerID), async...)
 
 	if timer == nil {
-		clog.Warnf("[AddOnce] error. d = %+v", delay)
+		clog.Warn("[AddOnce] error. d = %+v", delay)
 		return 0
 	}
 

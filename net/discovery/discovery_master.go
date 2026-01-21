@@ -61,7 +61,7 @@ func (m *DiscoveryMaster) loadMember() {
 	// Get nats config
 	config := cprofile.GetConfig("cluster").GetConfig(m.Name())
 	if config.LastError() != nil {
-		clog.Fatalf("[loadMember] Nats config not found. err = %v", config.LastError())
+		clog.Fatal("[loadMember] Nats config not found. err = %v", config.LastError())
 	}
 
 	m.prefix = config.GetString("prefix", "node")
@@ -85,7 +85,7 @@ func (m *DiscoveryMaster) loadMember() {
 	}
 
 	if err := m.preloadMarshal(); err != nil {
-		clog.Fatalf("[init] Marshal data error. err = %v", err)
+		clog.Fatal("[init] Marshal data error. err = %v", err)
 	}
 }
 
@@ -99,7 +99,7 @@ func (m *DiscoveryMaster) init() {
 	m.masterInit()
 	m.clientInit()
 
-	clog.Infof("[init] Discovery = %s is running.", m.Name())
+	clog.Info("[init] Discovery = %s is running.", m.Name())
 }
 
 func (m *DiscoveryMaster) masterInit() {
@@ -130,7 +130,7 @@ func (m *DiscoveryMaster) addSubscribe() {
 	m.subscribe(m.addSubject, func(msg *nats.Msg) {
 		addMember, err := m.bytes2Member(msg.Data)
 		if err != nil {
-			clog.Warnf("[addSubscribe] bytes to Member error. err = %s", err)
+			clog.Warn("[addSubscribe] bytes to Member error. err = %s", err)
 			return
 		}
 
@@ -157,13 +157,13 @@ func (m *DiscoveryMaster) Stop() {
 		m.sendRemove(m.thisNodeIDBytes)
 	}
 
-	clog.Debugf("[Stop] NodeID = %s is unregister", m.app.NodeID())
+	clog.Debug("[Stop] NodeID = %s is unregister", m.app.NodeID())
 }
 
 func (m *DiscoveryMaster) sendRemove(data []byte) {
 	err := cnats.GetConnect().Publish(m.removeSubject, data)
 	if err != nil {
-		clog.Warnf("[sendRemove] Publish fail. err = %s", err)
+		clog.Warn("[sendRemove] Publish fail. err = %s", err)
 		return
 	}
 }
@@ -172,18 +172,18 @@ func (m *DiscoveryMaster) sendRegister2Master() {
 	// register current node to master
 	rspData, err := cnats.GetConnect().Request(m.registerSubject, m.thisMemberBytes)
 	if err != nil {
-		clog.Warnf("[sendRegister2Master] Fail. master = %s, err = %s",
+		clog.Warn("[sendRegister2Master] Fail. master = %s, err = %s",
 			m.masterID,
 			err,
 		)
 		return
 	}
 
-	clog.Infof("[sendRegister2Master] OK. master = %s, member = %s", m.masterID, m.thisMember)
+	clog.Info("[sendRegister2Master] OK. master = %s, member = %s", m.masterID, m.thisMember)
 
 	memberList, err := m.bytes2MemberList(rspData)
 	if err != nil {
-		clog.Warnf("[sendRegister2Master] Rsp data error. err = %s", err)
+		clog.Warn("[sendRegister2Master] Rsp data error. err = %s", err)
 		return
 	}
 
@@ -195,7 +195,7 @@ func (m *DiscoveryMaster) sendRegister2Master() {
 func (m *DiscoveryMaster) sendHeartbeat2Master() {
 	err := cnats.GetConnect().Publish(m.heartbeatSubject, m.thisNodeIDBytes)
 	if err != nil {
-		clog.Warnf("[sendHeartbeat2Master] Publish fail. err = %s", err)
+		clog.Warn("[sendHeartbeat2Master] Publish fail. err = %s", err)
 		return
 	}
 }
@@ -207,7 +207,7 @@ func (m *DiscoveryMaster) heartbeatSubscribe() {
 	m.subscribe(m.heartbeatSubject, func(msg *nats.Msg) {
 		nodeID, err := m.bytes2NodeID(msg.Data)
 		if err != nil {
-			clog.Warnf("[heartbeatSubscribe] bytes to NodeID error. err = %v", err)
+			clog.Warn("[heartbeatSubscribe] bytes to NodeID error. err = %v", err)
 			return
 		}
 
@@ -225,7 +225,7 @@ func (m *DiscoveryMaster) heartbeatCheck() {
 		m.memberMap.Range(func(key, value any) bool {
 			protoMember, ok := value.(*cproto.Member)
 			if !ok {
-				clog.Warnf("[heartbeatCheck] Member type error. Member = %v", value)
+				clog.Warn("[heartbeatCheck] Member type error. Member = %v", value)
 				return true
 			}
 
@@ -235,7 +235,7 @@ func (m *DiscoveryMaster) heartbeatCheck() {
 
 				nodeIDBytes, err := m.NodeID2Bytes(protoMember.NodeID)
 				if err != nil {
-					clog.Warnf("[heartbeatCheck] NodeID2Bytes error. err = %s", err)
+					clog.Warn("[heartbeatCheck] NodeID2Bytes error. err = %s", err)
 					return true
 				}
 
@@ -254,7 +254,7 @@ func (m *DiscoveryMaster) registerSubscribe() {
 	m.subscribe(m.registerSubject, func(msg *nats.Msg) {
 		newMember, err := m.bytes2Member(msg.Data)
 		if err != nil {
-			clog.Warnf("[registerSubscribe] bytes to IMember Unmarshal error. err = %s", err)
+			clog.Warn("[registerSubscribe] bytes to IMember Unmarshal error. err = %s", err)
 			return
 		}
 
@@ -264,20 +264,20 @@ func (m *DiscoveryMaster) registerSubscribe() {
 		// Response member list to new member node
 		memberListBytes, err := m.memberList2Bytes()
 		if err != nil {
-			clog.Warnf("[registerSubscribe] Marshal fail. err = %s", err)
+			clog.Warn("[registerSubscribe] Marshal fail. err = %s", err)
 			return
 		}
 
 		err = msg.Respond(memberListBytes)
 		if err != nil {
-			clog.Warnf("[registerSubscribe] Respond fail. err = %s", err)
+			clog.Warn("[registerSubscribe] Respond fail. err = %s", err)
 			return
 		}
 
 		// Publish new member data to all client node
 		err = cnats.GetConnect().Publish(m.addSubject, msg.Data)
 		if err != nil {
-			clog.Warnf("[registerSubscribe] Add subject publish fail. err = %s", err)
+			clog.Warn("[registerSubscribe] Add subject publish fail. err = %s", err)
 			return
 		}
 	})
@@ -287,7 +287,7 @@ func (m *DiscoveryMaster) removeSubscribe() {
 	m.subscribe(m.removeSubject, func(msg *nats.Msg) {
 		nodeID, err := m.bytes2NodeID(msg.Data)
 		if err != nil {
-			clog.Warnf("[removeSubscribe] bytes to NodeID error. err = %s", err)
+			clog.Warn("[removeSubscribe] bytes to NodeID error. err = %s", err)
 			return
 		}
 
@@ -370,7 +370,7 @@ func (m *DiscoveryMaster) bytes2NodeID(data []byte) (string, error) {
 func (m *DiscoveryMaster) subscribe(subject string, cb nats.MsgHandler) {
 	err := cnats.GetConnect().Subscribe(subject, cb)
 	if err != nil {
-		clog.Warnf("[subscribe] fail. subject = %s, err = %s", subject, err)
+		clog.Warn("[subscribe] fail. subject = %s, err = %s", subject, err)
 		return
 	}
 }

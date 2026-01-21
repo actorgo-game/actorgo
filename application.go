@@ -95,13 +95,13 @@ func (a *Application) Register(components ...cfacade.IComponent) {
 
 	for _, c := range components {
 		if c == nil || c.Name() == "" {
-			clog.Errorf("[component = %T] name is nil", c)
+			clog.Error("[component = %T] name is nil", c)
 			return
 		}
 
 		result := a.Find(c.Name())
 		if result != nil {
-			clog.Errorf("[component name = %s] is duplicate.", c.Name())
+			clog.Error("[component name = %s] is duplicate.", c.Name())
 			return
 		}
 
@@ -151,7 +151,7 @@ func (a *Application) OnShutdown(fn ...func()) {
 func (a *Application) Startup() {
 	defer func() {
 		if r := recover(); r != nil {
-			clog.Error(r)
+			clog.Error(r.(string))
 		}
 	}()
 
@@ -175,38 +175,38 @@ func (a *Application) Startup() {
 	}
 
 	clog.Info("-------------------------------------------------")
-	clog.Infof("[nodeID      = %s] application is starting...", a.NodeID())
-	clog.Infof("[nodeType    = %s]", a.NodeType())
-	clog.Infof("[pid         = %d]", os.Getpid())
-	clog.Infof("[startTime   = %s]", a.StartTime())
-	clog.Infof("[profilePath = %s]", cprofile.Path())
-	clog.Infof("[profileName = %s]", cprofile.Name())
-	clog.Infof("[env         = %s]", cprofile.Env())
-	clog.Infof("[debug       = %v]", cprofile.Debug())
-	clog.Infof("[printLevel  = %s]", cprofile.PrintLevel())
-	clog.Infof("[logLevel    = %s]", clog.DefaultLogger.LogLevel)
-	clog.Infof("[stackLevel  = %s]", clog.DefaultLogger.StackLevel)
-	clog.Infof("[writeFile   = %v]", clog.DefaultLogger.EnableWriteFile)
-	clog.Infof("[serializer  = %s]", a.serializer.Name())
+	clog.Info("[nodeID      = %s] application is starting...", a.NodeID())
+	clog.Info("[nodeType    = %s]", a.NodeType())
+	clog.Info("[pid         = %d]", os.Getpid())
+	clog.Info("[startTime   = %s]", a.StartTime())
+	clog.Info("[profilePath = %s]", cprofile.Path())
+	clog.Info("[profileName = %s]", cprofile.Name())
+	clog.Info("[env         = %s]", cprofile.Env())
+	clog.Info("[debug       = %v]", cprofile.Debug())
+	clog.Info("[printLevel  = %s]", cprofile.PrintLevel())
+	clog.Info("[logLevel    = %s]", clog.DefaultLogger.LogLevel)
+	clog.Info("[stackLevel  = %s]", clog.DefaultLogger.StackLevel)
+	clog.Info("[writeFile   = %v]", clog.DefaultLogger.EnableWriteFile)
+	clog.Info("[serializer  = %s]", a.serializer.Name())
 	clog.Info("-------------------------------------------------")
 
 	// component list
 	for _, c := range a.components {
 		c.Set(a)
-		clog.Infof("[component = %s] is added.", c.Name())
+		clog.Info("[component = %s] is added.", c.Name())
 	}
 	clog.Info("-------------------------------------------------")
 
 	// execute Init()
 	for _, c := range a.components {
-		clog.Infof("[component = %s] -> OnInit().", c.Name())
+		clog.Info("[component = %s] -> OnInit().", c.Name())
 		c.Init()
 	}
 	clog.Info("-------------------------------------------------")
 
 	// execute OnAfterInit()
 	for _, c := range a.components {
-		clog.Infof("[component = %s] -> OnAfterInit().", c.Name())
+		clog.Info("[component = %s] -> OnAfterInit().", c.Name())
 		c.OnAfterInit()
 	}
 
@@ -219,7 +219,7 @@ func (a *Application) Startup() {
 	}
 
 	clog.Info("-------------------------------------------------")
-	clog.Infof("[spend time = %dms] application is running.", a.startTime.NowDiffMillisecond())
+	clog.Info("[spend time = %dms] application is running.", a.startTime.NowDiffMillisecond())
 	clog.Info("-------------------------------------------------")
 
 	// set application is running
@@ -232,7 +232,7 @@ func (a *Application) Startup() {
 	case <-a.dieChan:
 		clog.Info("invoke shutdown().")
 	case s := <-sg:
-		clog.Infof("receive shutdown signal = %v.", s)
+		clog.Info("receive shutdown signal = %v.", s)
 	}
 
 	// stop status
@@ -245,7 +245,7 @@ func (a *Application) Startup() {
 			cutils.Try(func() {
 				f()
 			}, func(errString string) {
-				clog.Warnf("[onShutdownFn] error = %s", errString)
+				clog.Warn("[onShutdownFn] error = %s", errString)
 			})
 		}
 	}
@@ -253,19 +253,19 @@ func (a *Application) Startup() {
 	//all components in reverse order
 	for i := len(a.components) - 1; i >= 0; i-- {
 		cutils.Try(func() {
-			clog.Infof("[component = %s] -> OnBeforeStop().", a.components[i].Name())
+			clog.Info("[component = %s] -> OnBeforeStop().", a.components[i].Name())
 			a.components[i].OnBeforeStop()
 		}, func(errString string) {
-			clog.Warnf("[component = %s] -> OnBeforeStop(). error = %s", a.components[i].Name(), errString)
+			clog.Warn("[component = %s] -> OnBeforeStop(). error = %s", a.components[i].Name(), errString)
 		})
 	}
 
 	for i := len(a.components) - 1; i >= 0; i-- {
 		cutils.Try(func() {
-			clog.Infof("[component = %s] -> OnStop().", a.components[i].Name())
+			clog.Info("[component = %s] -> OnStop().", a.components[i].Name())
 			a.components[i].OnStop()
 		}, func(errString string) {
-			clog.Warnf("[component = %s] -> OnStop(). error = %s", a.components[i].Name(), errString)
+			clog.Warn("[component = %s] -> OnStop(). error = %s", a.components[i].Name(), errString)
 		})
 	}
 

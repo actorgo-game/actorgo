@@ -23,18 +23,18 @@ func newMailbox(name string) mailbox {
 
 func (p *mailbox) Register(funcName string, fn interface{}) {
 	if funcName == "" || len(funcName) < 1 {
-		clog.Errorf("[%s] Func name is empty.", fn)
+		clog.Error("[%s] Func name is empty.", fn)
 		return
 	}
 
 	funcInfo, err := creflect.GetFuncInfo(fn)
 	if err != nil {
-		clog.Errorf("funcName = %s, err = %v", funcName, err)
+		clog.Error("funcName = %s, err = %v", funcName, err)
 		return
 	}
 
 	if _, found := p.funcMap[funcName]; found {
-		clog.Errorf("funcName = %s, already exists.", funcName)
+		clog.Error("funcName = %s, already exists.", funcName)
 		return
 	}
 
@@ -54,7 +54,7 @@ func (p *mailbox) Pop() *cfacade.Message {
 
 	msg, ok := v.(*cfacade.Message)
 	if !ok {
-		clog.Warnf("Convert to *Message fail. v = %+v", v)
+		clog.Warn("Convert to *Message fail. v = %+v", v)
 		return nil
 	}
 
