@@ -1,10 +1,10 @@
-package cherryProto
+package cproto
 
 import (
 	"fmt"
 	"sync"
 
-	ctime "github.com/cherry-game/cherry/extend/time"
+	ctime "github.com/actorgo-game/actorgo/extend/time"
 	"google.golang.org/protobuf/proto"
 )
 

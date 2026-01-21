@@ -1,4 +1,4 @@
-package cherryActor
+package cactor
 
 import (
 	"fmt"

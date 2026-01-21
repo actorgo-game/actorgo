@@ -1,6 +1,6 @@
-// Package cherrySnowflake code from: https://github.com/bwmarrin/snowflake
+// Package  code from: https://github.com/bwmarrin/snowflake
 // snowflake provides a very simple Twitter snowflake generator and parser.
-package cherrySnowflake
+package csnowflake
 
 import (
 	"encoding/base64"
@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	cerr "github.com/cherry-game/cherry/error"
+	cerr "github.com/actorgo-game/actorgo/error"
 )
 
 var (

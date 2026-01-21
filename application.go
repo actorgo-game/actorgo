@@ -1,4 +1,4 @@
-package cherry
+package actorgo
 
 import (
 	"os"
@@ -6,14 +6,14 @@ import (
 	"sync/atomic"
 	"syscall"
 
-	cconst "github.com/cherry-game/cherry/const"
-	ctime "github.com/cherry-game/cherry/extend/time"
-	cutils "github.com/cherry-game/cherry/extend/utils"
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
-	cactor "github.com/cherry-game/cherry/net/actor"
-	cserializer "github.com/cherry-game/cherry/net/serializer"
-	cprofile "github.com/cherry-game/cherry/profile"
+	cconst "github.com/actorgo-game/actorgo/const"
+	ctime "github.com/actorgo-game/actorgo/extend/time"
+	cutils "github.com/actorgo-game/actorgo/extend/utils"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
+	cactor "github.com/actorgo-game/actorgo/net/actor"
+	cserializer "github.com/actorgo-game/actorgo/net/serializer"
+	cprofile "github.com/actorgo-game/actorgo/profile"
 )
 
 const (
@@ -28,7 +28,7 @@ type (
 		cfacade.INode
 		isFrontend   bool
 		nodeMode     NodeMode
-		startTime    ctime.CherryTime     // application start time
+		startTime    ctime.ActorGoTime    // application start time
 		running      int32                // is running
 		dieChan      chan bool            // wait for end application
 		onShutdownFn []func()             // on shutdown execute functions

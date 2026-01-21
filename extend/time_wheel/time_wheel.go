@@ -1,13 +1,13 @@
-// Package cherryTimeWheel file from https://github.com/RussellLuo/timingwheel
-package cherryTimeWheel
+// Package file from https://github.com/RussellLuo/timingwheel
+package ctimewheel
 
 import (
 	"sync/atomic"
 	"time"
 	"unsafe"
 
-	cutils "github.com/cherry-game/cherry/extend/utils"
-	clog "github.com/cherry-game/cherry/logger"
+	cutils "github.com/actorgo-game/actorgo/extend/utils"
+	clog "github.com/actorgo-game/actorgo/logger"
 )
 
 // TimeWheel is an implementation of Hierarchical Timing Wheels.

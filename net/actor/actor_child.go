@@ -1,11 +1,11 @@
-package cherryActor
+package cactor
 
 import (
 	"strings"
 	"sync"
 
-	cherryCode "github.com/cherry-game/cherry/code"
-	cfacade "github.com/cherry-game/cherry/facade"
+	"github.com/actorgo-game/actorgo/ccode"
+	cfacade "github.com/actorgo-game/actorgo/facade"
 )
 
 type actorChild struct {
@@ -95,5 +95,5 @@ func (p *actorChild) CallWait(childID, funcName string, arg, reply any) int32 {
 		return childActor.CallWait(path, funcName, arg, reply)
 	}
 
-	return cherryCode.ActorCallFail
+	return ccode.ActorCallFail
 }

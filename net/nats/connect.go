@@ -1,4 +1,4 @@
-package cherryNats
+package cnats
 
 import (
 	"fmt"
@@ -7,8 +7,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	cerror "github.com/cherry-game/cherry/error"
-	clog "github.com/cherry-game/cherry/logger"
+	cerror "github.com/actorgo-game/actorgo/error"
+	clog "github.com/actorgo-game/actorgo/logger"
 	"github.com/nats-io/nats.go"
 )
 

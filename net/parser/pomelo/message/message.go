@@ -4,8 +4,8 @@ import (
 	"encoding/binary"
 	"fmt"
 
-	cerr "github.com/cherry-game/cherry/error"
-	ccompress "github.com/cherry-game/cherry/extend/compress"
+	cerr "github.com/actorgo-game/actorgo/error"
+	ccompress "github.com/actorgo-game/actorgo/extend/compress"
 )
 
 var (

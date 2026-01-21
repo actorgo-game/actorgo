@@ -1,4 +1,4 @@
-package cherryNats
+package cnats
 
 import (
 	"sync"

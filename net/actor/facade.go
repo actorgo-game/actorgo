@@ -1,10 +1,10 @@
-package cherryActor
+package cactor
 
 import (
 	"time"
 
-	creflect "github.com/cherry-game/cherry/extend/reflect"
-	cfacade "github.com/cherry-game/cherry/facade"
+	creflect "github.com/actorgo-game/actorgo/extend/reflect"
+	cfacade "github.com/actorgo-game/actorgo/facade"
 )
 
 type (

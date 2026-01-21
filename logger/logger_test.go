@@ -1,9 +1,9 @@
-package cherryLogger
+package clogger
 
 import (
 	"testing"
 
-	ctime "github.com/cherry-game/cherry/extend/time"
+	ctime "github.com/actorgo-game/actorgo/extend/time"
 )
 
 func BenchmarkWrite(b *testing.B) {

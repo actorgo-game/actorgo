@@ -1,4 +1,4 @@
-package cherryFile
+package cfile
 
 import (
 	"fmt"

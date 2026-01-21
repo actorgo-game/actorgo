@@ -1,4 +1,4 @@
-package cherryUtils
+package cutils
 
 import (
 	"fmt"

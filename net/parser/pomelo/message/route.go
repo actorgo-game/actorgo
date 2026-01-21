@@ -3,8 +3,8 @@ package pomeloMessage
 import (
 	"strings"
 
-	cconst "github.com/cherry-game/cherry/const"
-	cerr "github.com/cherry-game/cherry/error"
+	cconst "github.com/actorgo-game/actorgo/const"
+	cerr "github.com/actorgo-game/actorgo/error"
 )
 
 // Route struct

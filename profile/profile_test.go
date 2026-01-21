@@ -1,4 +1,4 @@
-package cherryProfile
+package cprofile
 
 import (
 	"fmt"

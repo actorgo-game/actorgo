@@ -1,19 +1,19 @@
-package cherryTime
+package ctime
 
 import "time"
 
-// Copy 复制当前CherryTime
-func (c CherryTime) Copy() CherryTime {
+// Copy 复制当前ActorGoTime
+func (c ActorGoTime) Copy() ActorGoTime {
 	return NewTime(c.Time, true)
 }
 
 // Timezone 获取时区
-func (c CherryTime) Timezone() string {
+func (c ActorGoTime) Timezone() string {
 	return c.Location().String()
 }
 
 // DaysInYear 获取本年的总天数
-func (c CherryTime) DaysInYear() int {
+func (c ActorGoTime) DaysInYear() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -25,7 +25,7 @@ func (c CherryTime) DaysInYear() int {
 }
 
 // DaysInMonth 获取本月的总天数
-func (c CherryTime) DaysInMonth() int {
+func (c ActorGoTime) DaysInMonth() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -33,7 +33,7 @@ func (c CherryTime) DaysInMonth() int {
 }
 
 // MonthOfYear 获取本年的第几月(从1开始)
-func (c CherryTime) MonthOfYear() int {
+func (c ActorGoTime) MonthOfYear() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -41,7 +41,7 @@ func (c CherryTime) MonthOfYear() int {
 }
 
 // DayOfYear 获取本年的第几天(从1开始)
-func (c CherryTime) DayOfYear() int {
+func (c ActorGoTime) DayOfYear() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -49,7 +49,7 @@ func (c CherryTime) DayOfYear() int {
 }
 
 // DayOfMonth 获取本月的第几天(从1开始)
-func (c CherryTime) DayOfMonth() int {
+func (c ActorGoTime) DayOfMonth() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -57,7 +57,7 @@ func (c CherryTime) DayOfMonth() int {
 }
 
 // DayOfWeek 获取本周的第几天(从1开始)
-func (c CherryTime) DayOfWeek() int {
+func (c ActorGoTime) DayOfWeek() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -69,7 +69,7 @@ func (c CherryTime) DayOfWeek() int {
 }
 
 // WeekOfYear 获取本年的第几周(从1开始)
-func (c CherryTime) WeekOfYear() int {
+func (c ActorGoTime) WeekOfYear() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -78,7 +78,7 @@ func (c CherryTime) WeekOfYear() int {
 }
 
 // WeekOfMonth 获取本月的第几周(从1开始)
-func (c CherryTime) WeekOfMonth() int {
+func (c ActorGoTime) WeekOfMonth() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -90,7 +90,7 @@ func (c CherryTime) WeekOfMonth() int {
 }
 
 // Year 获取当前年
-func (c CherryTime) Year() int {
+func (c ActorGoTime) Year() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -98,7 +98,7 @@ func (c CherryTime) Year() int {
 }
 
 // Quarter 获取当前季度
-func (c CherryTime) Quarter() int {
+func (c ActorGoTime) Quarter() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -117,7 +117,7 @@ func (c CherryTime) Quarter() int {
 }
 
 // Month 获取当前月
-func (c CherryTime) Month() int {
+func (c ActorGoTime) Month() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -125,7 +125,7 @@ func (c CherryTime) Month() int {
 }
 
 // Week 获取当前周(从0开始)
-func (c CherryTime) Week() int {
+func (c ActorGoTime) Week() int {
 	if c.IsZero() {
 		return -1
 	}
@@ -133,7 +133,7 @@ func (c CherryTime) Week() int {
 }
 
 // Day 获取当前日
-func (c CherryTime) Day() int {
+func (c ActorGoTime) Day() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -141,7 +141,7 @@ func (c CherryTime) Day() int {
 }
 
 // Hour 获取当前小时
-func (c CherryTime) Hour() int {
+func (c ActorGoTime) Hour() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -149,7 +149,7 @@ func (c CherryTime) Hour() int {
 }
 
 // Minute 获取当前分钟数
-func (c CherryTime) Minute() int {
+func (c ActorGoTime) Minute() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -157,7 +157,7 @@ func (c CherryTime) Minute() int {
 }
 
 // Second 获取当前秒数
-func (c CherryTime) Second() int {
+func (c ActorGoTime) Second() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -165,7 +165,7 @@ func (c CherryTime) Second() int {
 }
 
 // Millisecond 获取当前毫秒数
-func (c CherryTime) Millisecond() int {
+func (c ActorGoTime) Millisecond() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -173,7 +173,7 @@ func (c CherryTime) Millisecond() int {
 }
 
 // Microsecond 获取当前微秒数
-func (c CherryTime) Microsecond() int {
+func (c ActorGoTime) Microsecond() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -181,7 +181,7 @@ func (c CherryTime) Microsecond() int {
 }
 
 // Nanosecond 获取当前纳秒数
-func (c CherryTime) Nanosecond() int {
+func (c ActorGoTime) Nanosecond() int {
 	if c.IsZero() {
 		return 0
 	}
@@ -191,31 +191,31 @@ func (c CherryTime) Nanosecond() int {
 // ------------------------------------------
 
 // StartOfYear 本年开始时间
-func (c CherryTime) StartOfYear() CherryTime {
+func (c ActorGoTime) StartOfYear() ActorGoTime {
 	t := time.Date(c.Time.Year(), 1, 1, 0, 0, 0, 0, c.Location())
 	return NewTime(t, false)
 }
 
 // EndOfYear 本年结束时间
-func (c CherryTime) EndOfYear() CherryTime {
+func (c ActorGoTime) EndOfYear() ActorGoTime {
 	t := time.Date(c.Time.Year(), 12, 31, 23, 59, 59, 0, c.Location())
 	return NewTime(t, false)
 }
 
 // StartOfMonth 本月开始时间
-func (c CherryTime) StartOfMonth() CherryTime {
+func (c ActorGoTime) StartOfMonth() ActorGoTime {
 	t := time.Date(c.Time.Year(), c.Time.Month(), 1, 0, 0, 0, 0, c.Location())
 	return NewTime(t, false)
 }
 
 // EndOfMonth 本月结束时间
-func (c CherryTime) EndOfMonth() CherryTime {
+func (c ActorGoTime) EndOfMonth() ActorGoTime {
 	t := time.Date(c.Time.Year(), c.Time.Month(), 1, 23, 59, 59, 0, c.Location())
 	return NewTime(t.AddDate(0, 1, -1), false)
 }
 
 // StartOfWeek 本周开始时间
-func (c CherryTime) StartOfWeek() CherryTime {
+func (c ActorGoTime) StartOfWeek() ActorGoTime {
 	days := c.Time.Weekday()
 	if days == 0 {
 		days = DaysPerWeek
@@ -226,7 +226,7 @@ func (c CherryTime) StartOfWeek() CherryTime {
 }
 
 // EndOfWeek 本周结束时间
-func (c CherryTime) EndOfWeek() CherryTime {
+func (c ActorGoTime) EndOfWeek() ActorGoTime {
 	days := c.Time.Weekday()
 	if days == 0 {
 		days = DaysPerWeek
@@ -237,49 +237,49 @@ func (c CherryTime) EndOfWeek() CherryTime {
 }
 
 // StartOfDay 本日开始时间
-func (c CherryTime) StartOfDay() CherryTime {
+func (c ActorGoTime) StartOfDay() ActorGoTime {
 	t := time.Date(c.Time.Year(), c.Time.Month(), c.Time.Day(), 0, 0, 0, 0, c.Location())
 	return NewTime(t, false)
 }
 
 // EndOfDay 本日结束时间
-func (c CherryTime) EndOfDay() CherryTime {
+func (c ActorGoTime) EndOfDay() ActorGoTime {
 	t := time.Date(c.Time.Year(), c.Time.Month(), c.Time.Day(), 23, 59, 59, 0, c.Location())
 	return NewTime(t, false)
 }
 
 // StartOfHour 小时开始时间
-func (c CherryTime) StartOfHour() CherryTime {
+func (c ActorGoTime) StartOfHour() ActorGoTime {
 	t := time.Date(c.Time.Year(), c.Time.Month(), c.Time.Day(), c.Time.Hour(), 0, 0, 0, c.Location())
 	return NewTime(t, false)
 }
 
 // EndOfHour 小时结束时间
-func (c CherryTime) EndOfHour() CherryTime {
+func (c ActorGoTime) EndOfHour() ActorGoTime {
 	t := time.Date(c.Time.Year(), c.Time.Month(), c.Time.Day(), c.Time.Hour(), 59, 59, 0, c.Location())
 	return NewTime(t, false)
 }
 
 // StartOfMinute 分钟开始时间
-func (c CherryTime) StartOfMinute() CherryTime {
+func (c ActorGoTime) StartOfMinute() ActorGoTime {
 	t := time.Date(c.Time.Year(), c.Time.Month(), c.Time.Day(), c.Time.Hour(), c.Time.Minute(), 0, 0, c.Location())
 	return NewTime(t, false)
 }
 
 // EndOfMinute 分钟结束时间
-func (c CherryTime) EndOfMinute() CherryTime {
+func (c ActorGoTime) EndOfMinute() ActorGoTime {
 	t := time.Date(c.Time.Year(), c.Time.Month(), c.Time.Day(), c.Time.Hour(), c.Time.Minute(), 59, 0, c.Location())
 	return NewTime(t, false)
 }
 
 // StartOfSecond 秒开始时间
-func (c CherryTime) StartOfSecond() CherryTime {
+func (c ActorGoTime) StartOfSecond() ActorGoTime {
 	t := time.Date(c.Time.Year(), c.Time.Month(), c.Time.Day(), c.Time.Hour(), c.Time.Minute(), c.Time.Second(), 0, c.Location())
 	return NewTime(t, false)
 }
 
 // EndOfSecond 秒结束时间
-func (c CherryTime) EndOfSecond() CherryTime {
+func (c ActorGoTime) EndOfSecond() ActorGoTime {
 	t := time.Date(c.Time.Year(), c.Time.Month(), c.Time.Day(), c.Time.Hour(), c.Time.Minute(), c.Time.Second(), 999999999, c.Location())
 	return NewTime(t, false)
 }

@@ -3,9 +3,9 @@ package simple
 import (
 	"sync"
 
-	cerr "github.com/cherry-game/cherry/error"
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
+	cerr "github.com/actorgo-game/actorgo/error"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
 )
 
 var (

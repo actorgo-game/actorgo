@@ -1,11 +1,11 @@
-package cherryConnector
+package cconnector
 
 import (
 	"crypto/tls"
 	"net"
 
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
 )
 
 type (

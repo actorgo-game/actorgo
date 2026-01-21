@@ -1,5 +1,5 @@
-// Package cherrySlice code from: https://github.com/beego/beego/blob/develop/core/utils/slice.go
-package cherrySlice
+// Package code from: https://github.com/beego/beego/blob/develop/core/utils/slice.go
+package cslice
 
 import (
 	"math/rand"
@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	cstring "github.com/cherry-game/cherry/extend/string"
-	cutils "github.com/cherry-game/cherry/extend/utils"
+	cstring "github.com/actorgo-game/actorgo/extend/string"
+	cutils "github.com/actorgo-game/actorgo/extend/utils"
 )
 
 func Int32In(v int32, sl []int32) (int, bool) {

@@ -1,9 +1,9 @@
-package cherryFacade
+package cfacade
 
 import (
 	"time"
 
-	creflect "github.com/cherry-game/cherry/extend/reflect"
+	creflect "github.com/actorgo-game/actorgo/extend/reflect"
 )
 
 type (

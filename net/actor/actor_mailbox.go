@@ -1,10 +1,10 @@
-package cherryActor
+package cactor
 
 import (
-	creflect "github.com/cherry-game/cherry/extend/reflect"
-	ctime "github.com/cherry-game/cherry/extend/time"
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
+	creflect "github.com/actorgo-game/actorgo/extend/reflect"
+	ctime "github.com/actorgo-game/actorgo/extend/time"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
 )
 
 type mailbox struct {

@@ -1,9 +1,9 @@
-# 🍒 欢迎使用 cherry！
+# 🍒 欢迎使用 actorgo！
 
-![cherry logo](https://img.shields.io/badge/cherry--game-cherry-red)
-![cherry license](https://img.shields.io/github/license/cherry-game/cherry)
-![go version](https://img.shields.io/github/go-mod/go-version/cherry-game/cherry)
-![cherry tag](https://img.shields.io/github/v/tag/cherry-game/cherry)
+![actorgo logo](https://img.shields.io/badge/actorgo--game-actorgo-red)
+![actorgo license](https://img.shields.io/github/license/actorgo-game/actorgo)
+![go version](https://img.shields.io/github/go-mod/go-version/actorgo-game/actorgo)
+![actorgo tag](https://img.shields.io/github/v/tag/actorgo-game/actorgo)
 
 - **高性能分布式的 Golang 游戏服务器框架**
 - 采用 Golang + Actor Model 构建，具备高性能、可伸缩等特性
@@ -13,9 +13,9 @@
 
 - **新增 Actor model 实现**
 - **新增 simple 网络数据包结构**（id(4bytes) + dataLen(4bytes) + data(n bytes)）
-- **示例代码迁移**：[examples](https://github.com/cherry-game/examples)
-- **组件库迁移**：[components](https://github.com/cherry-game/components)
-- **文档地址**：[点击查看](https://cherry-game.github.io/)
+- **示例代码迁移**：[examples](https://github.com/actorgo-game/examples)
+- **组件库迁移**：[components](https://github.com/actorgo-game/components)
+- **文档地址**：[点击查看](https://actorgo-game.github.io/)
 
 ## 💬 讨论与交流
 
@@ -34,8 +34,8 @@
 
 准备步骤：
 
-  * [环境安装与配置](https://cherry-game.github.io/guides/install-go.html)
-  * 源码位置：[examples/demo_chat](https://github.com/cherry-game/examples/tree/master/demo_chat)
+  * [环境安装与配置](https://actorgo-game.github.io/guides/install-go.html)
+  * 源码位置：[examples/demo_chat](https://github.com/actorgo-game/examples/tree/master/demo_chat)
 
 ### 多节点分布式游戏示例
 
@@ -47,8 +47,8 @@
 
 准备步骤：
 
-  * [环境安装与配置](https://cherry-game.github.io/guides/install-go.html)
-  * 源码位置：[examples/demo_cluster](https://github.com/cherry-game/examples/tree/master/demo_cluster)
+  * [环境安装与配置](https://actorgo-game.github.io/guides/install-go.html)
+  * 源码位置：[examples/demo_cluster](https://github.com/actorgo-game/examples/tree/master/demo_cluster)
 
 ## 🌟 核心功能
 

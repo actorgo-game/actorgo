@@ -1,4 +1,4 @@
-package cherryQueue
+package cqueue
 
 import (
 	"fmt"

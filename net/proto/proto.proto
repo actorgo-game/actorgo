@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-option go_package = "github.com/cherry-game/cherry/net/proto/proto;cherryProto";
+option go_package = "github.com/actorgo-game/actorgo/net/proto/proto;cproto";
 
-package cherryProto;
+package cproto;
 
 message I32 {
   int32  value = 1;

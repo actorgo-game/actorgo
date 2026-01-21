@@ -1,4 +1,4 @@
-// Package cherryMapStructure exposes functionality to convert one arbitrary
+// Package exposes functionality to convert one arbitrary
 // Go type into another, typically to convert a map[string]interface{}
 // into a native Go structure.
 //
@@ -156,7 +156,7 @@
 //
 // mapstructure is highly configurable. See the DecoderConfig struct
 // for other features and options that are supported.
-package cherryMapStructure
+package cmapstructure
 
 import (
 	"encoding/json"

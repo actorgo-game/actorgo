@@ -1,7 +1,7 @@
-package cherryActor
+package cactor
 
 import (
-	cfacade "github.com/cherry-game/cherry/facade"
+	cfacade "github.com/actorgo-game/actorgo/facade"
 )
 
 type Base struct {

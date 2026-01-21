@@ -1,4 +1,4 @@
-package cherryProto
+package cproto
 
 import (
 	"fmt"

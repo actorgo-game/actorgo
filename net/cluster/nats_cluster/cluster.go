@@ -1,17 +1,17 @@
-package cherryNatsCluster
+package cnatscluster
 
 import (
 	"time"
 
 	"google.golang.org/protobuf/proto"
 
-	ccode "github.com/cherry-game/cherry/code"
-	cerror "github.com/cherry-game/cherry/error"
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
-	cnats "github.com/cherry-game/cherry/net/nats"
-	cproto "github.com/cherry-game/cherry/net/proto"
-	cprofile "github.com/cherry-game/cherry/profile"
+	ccode "github.com/actorgo-game/actorgo/ccode"
+	cerror "github.com/actorgo-game/actorgo/error"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
+	cnats "github.com/actorgo-game/actorgo/net/nats"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
+	cprofile "github.com/actorgo-game/actorgo/profile"
 	"github.com/nats-io/nats.go"
 )
 

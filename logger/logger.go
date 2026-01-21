@@ -1,4 +1,4 @@
-package cherryLogger
+package clogger
 
 import (
 	"fmt"
@@ -7,33 +7,33 @@ import (
 	"sync"
 	"time"
 
-	cfacade "github.com/cherry-game/cherry/facade"
-	"github.com/cherry-game/cherry/logger/rotatelogs"
-	cprofile "github.com/cherry-game/cherry/profile"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	"github.com/actorgo-game/actorgo/logger/rotatelogs"
+	cprofile "github.com/actorgo-game/actorgo/profile"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
 
 var (
-	rw             sync.RWMutex             // mutex
-	DefaultLogger  *CherryLogger            // 默认日志对象(控制台输出)
-	loggers        map[string]*CherryLogger // 日志实例存储map(key:日志名称,value:日志实例)
-	nodeID         string                   // current node id
-	printLevel     zapcore.Level            // cherry log print level
-	fileNameVarMap = map[string]string{}    // 日志输出文件名自定义变量
+	rw             sync.RWMutex            // mutex
+	DefaultLogger  *ActorLogger            // 默认日志对象(控制台输出)
+	loggers        map[string]*ActorLogger // 日志实例存储map(key:日志名称,value:日志实例)
+	nodeID         string                  // current node id
+	printLevel     zapcore.Level           // log print level
+	fileNameVarMap = map[string]string{}   // 日志输出文件名自定义变量
 )
 
 func init() {
 	DefaultLogger = NewConfigLogger(defaultConsoleConfig(), zap.AddCallerSkip(1))
-	loggers = make(map[string]*CherryLogger)
+	loggers = make(map[string]*ActorLogger)
 }
 
-type CherryLogger struct {
+type ActorLogger struct {
 	*zap.SugaredLogger
 	*Config
 }
 
-func (c *CherryLogger) Print(v ...interface{}) {
+func (c *ActorLogger) Print(v ...interface{}) {
 	c.Warn(v)
 }
 
@@ -64,7 +64,7 @@ func Flush() {
 	}
 }
 
-func NewLogger(refLoggerName string, opts ...zap.Option) *CherryLogger {
+func NewLogger(refLoggerName string, opts ...zap.Option) *ActorLogger {
 	if refLoggerName == "" {
 		return nil
 	}
@@ -87,7 +87,7 @@ func NewLogger(refLoggerName string, opts ...zap.Option) *CherryLogger {
 	return logger
 }
 
-func NewConfigLogger(config *Config, opts ...zap.Option) *CherryLogger {
+func NewConfigLogger(config *Config, opts ...zap.Option) *ActorLogger {
 	if config.EnableWriteFile {
 		for key, value := range fileNameVarMap {
 			config.FileLinkPath = strings.ReplaceAll(config.FileLinkPath, "%"+key, value)
@@ -159,12 +159,12 @@ func NewConfigLogger(config *Config, opts ...zap.Option) *CherryLogger {
 		zap.NewAtomicLevelAt(GetLevel(config.LogLevel)),
 	)
 
-	cherryLogger := &CherryLogger{
+	logger := &ActorLogger{
 		SugaredLogger: NewSugaredLogger(core, opts...),
 		Config:        config,
 	}
 
-	return cherryLogger
+	return logger
 }
 
 func NewSugaredLogger(core zapcore.Core, opts ...zap.Option) *zap.SugaredLogger {

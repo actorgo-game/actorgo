@@ -1,4 +1,4 @@
-package cherryConnector
+package cconnector
 
 import (
 	"fmt"
@@ -6,7 +6,7 @@ import (
 	"sync"
 	"testing"
 
-	clog "github.com/cherry-game/cherry/logger"
+	clog "github.com/actorgo-game/actorgo/logger"
 )
 
 // websocket client http://www.websocket-test.com/

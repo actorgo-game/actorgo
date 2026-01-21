@@ -1,4 +1,4 @@
-package cherryCompress
+package ccompress
 
 import (
 	"bytes"

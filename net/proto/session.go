@@ -1,8 +1,8 @@
-package cherryProto
+package cproto
 
 import (
-	cconst "github.com/cherry-game/cherry/const"
-	cstring "github.com/cherry-game/cherry/extend/string"
+	cconst "github.com/actorgo-game/actorgo/const"
+	cstring "github.com/actorgo-game/actorgo/extend/string"
 )
 
 const (

@@ -3,7 +3,7 @@ package rotatelogs
 import (
 	"time"
 
-	"github.com/cherry-game/cherry/logger/rotatelogs/internal/option"
+	"github.com/actorgo-game/actorgo/logger/rotatelogs/internal/option"
 )
 
 const (

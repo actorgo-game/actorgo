@@ -1,4 +1,4 @@
-package cherryMapStructure
+package cmapstructure
 
 import (
 	"reflect"

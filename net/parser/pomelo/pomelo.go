@@ -1,10 +1,10 @@
 package pomelo
 
 import (
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
-	pmessage "github.com/cherry-game/cherry/net/parser/pomelo/message"
-	cproto "github.com/cherry-game/cherry/net/proto"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
+	pmessage "github.com/actorgo-game/actorgo/net/parser/pomelo/message"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
 )
 
 // DefaultDataRoute 默认的消息路由

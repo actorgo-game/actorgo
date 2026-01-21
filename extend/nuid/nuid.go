@@ -1,4 +1,4 @@
-package cherryNUID
+package cnuid
 
 import "github.com/nats-io/nuid"
 

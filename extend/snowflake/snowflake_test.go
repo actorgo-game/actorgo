@@ -1,4 +1,4 @@
-package cherrySnowflake
+package csnowflake
 
 import (
 	"bytes"

@@ -1,4 +1,4 @@
-package cherryMap
+package cmap
 
 import (
 	"fmt"

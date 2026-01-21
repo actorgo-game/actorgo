@@ -1,11 +1,11 @@
-package cherryLogger
+package clogger
 
 import (
 	"fmt"
-	cprofile "github.com/cherry-game/cherry/profile"
+	cprofile "github.com/actorgo-game/actorgo/profile"
 	"time"
 
-	cfacade "github.com/cherry-game/cherry/facade"
+	cfacade "github.com/actorgo-game/actorgo/facade"
 	"go.uber.org/zap/zapcore"
 )
 

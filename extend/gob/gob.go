@@ -1,4 +1,4 @@
-package cherryGOB
+package cgob
 
 import (
 	"bytes"

@@ -1,4 +1,4 @@
-package cherryRegex
+package cregex
 
 import (
 	"regexp"

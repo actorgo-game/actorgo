@@ -1,9 +1,9 @@
 package simple
 
 import (
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
-	cproto "github.com/cherry-game/cherry/net/proto"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
 )
 
 var (

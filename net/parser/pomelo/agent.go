@@ -6,14 +6,14 @@ import (
 	"sync/atomic"
 	"time"
 
-	cnet "github.com/cherry-game/cherry/extend/net"
-	ctime "github.com/cherry-game/cherry/extend/time"
-	cutils "github.com/cherry-game/cherry/extend/utils"
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
-	pomeloMessage "github.com/cherry-game/cherry/net/parser/pomelo/message"
-	pomeloPacket "github.com/cherry-game/cherry/net/parser/pomelo/packet"
-	cproto "github.com/cherry-game/cherry/net/proto"
+	cnet "github.com/actorgo-game/actorgo/extend/net"
+	ctime "github.com/actorgo-game/actorgo/extend/time"
+	cutils "github.com/actorgo-game/actorgo/extend/utils"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
+	pomeloMessage "github.com/actorgo-game/actorgo/net/parser/pomelo/message"
+	pomeloPacket "github.com/actorgo-game/actorgo/net/parser/pomelo/packet"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
 	"go.uber.org/zap/zapcore"
 )
 

@@ -1,4 +1,4 @@
-package cherryError
+package cerror
 
 import (
 	"errors"

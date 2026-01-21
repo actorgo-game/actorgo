@@ -1,13 +1,13 @@
-package cherryFacade
+package cfacade
 
 import (
 	"strings"
 
-	cconst "github.com/cherry-game/cherry/const"
-	cerr "github.com/cherry-game/cherry/error"
-	cstring "github.com/cherry-game/cherry/extend/string"
-	ctime "github.com/cherry-game/cherry/extend/time"
-	cproto "github.com/cherry-game/cherry/net/proto"
+	cconst "github.com/actorgo-game/actorgo/const"
+	cerr "github.com/actorgo-game/actorgo/error"
+	cstring "github.com/actorgo-game/actorgo/extend/string"
+	ctime "github.com/actorgo-game/actorgo/extend/time"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
 	"github.com/nats-io/nats.go"
 )
 

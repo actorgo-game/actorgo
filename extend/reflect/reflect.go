@@ -1,11 +1,11 @@
-package cherryReflect
+package creflect
 
 import (
 	"fmt"
 	"reflect"
 	"runtime"
 
-	cstring "github.com/cherry-game/cherry/extend/string"
+	cstring "github.com/actorgo-game/actorgo/extend/string"
 )
 
 func ReflectTry(f reflect.Value, args []reflect.Value, handler func(interface{})) {

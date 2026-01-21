@@ -1,12 +1,12 @@
-// Package cherryMap file from https://github.com/gogf/gf
-package cherryMap
+// Package file from https://github.com/gogf/gf
+package cmap
 
 import (
 	"encoding/json"
 	"sync"
 	"unsafe"
 
-	cutils "github.com/cherry-game/cherry/extend/utils"
+	cutils "github.com/actorgo-game/actorgo/extend/utils"
 )
 
 type StringAnyMap struct {

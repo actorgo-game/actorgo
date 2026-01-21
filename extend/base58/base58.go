@@ -1,5 +1,5 @@
-// Package cherryBase58 file from https://github.com/akamensky/base58/blob/master/base58.go
-package cherryBase58
+// Package file from https://github.com/akamensky/base58/blob/master/base58.go
+package cbase58
 
 import (
 	"fmt"

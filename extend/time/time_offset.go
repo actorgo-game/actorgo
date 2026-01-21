@@ -1,4 +1,4 @@
-package cherryTime
+package ctime
 
 import "time"
 

@@ -1,10 +1,10 @@
 package pomelo
 
 import (
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
-	cactor "github.com/cherry-game/cherry/net/actor"
-	cproto "github.com/cherry-game/cherry/net/proto"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
+	cactor "github.com/actorgo-game/actorgo/net/actor"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
 )
 
 const (

@@ -1,9 +1,9 @@
-package cherryActor
+package cactor
 
 import (
 	"time"
 
-	ctimeWheel "github.com/cherry-game/cherry/extend/time_wheel"
+	ctimeWheel "github.com/actorgo-game/actorgo/extend/time_wheel"
 )
 
 var (

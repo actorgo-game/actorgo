@@ -1,9 +1,9 @@
-package cherryDiscovery
+package cdiscovery
 
 import (
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
-	cprofile "github.com/cherry-game/cherry/profile"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
+	cprofile "github.com/actorgo-game/actorgo/profile"
 )
 
 const (

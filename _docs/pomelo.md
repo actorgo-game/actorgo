@@ -54,7 +54,7 @@ package分为header和body两部分。header描述package包的类型和包的�
 ```json
 {
   "code": 200,
-  "@code": "response code",
+  "@code": "response ccode",
   "sys": {
     "heartbeat": 3,
     "@heartbeat": "heartbeat interval in second",

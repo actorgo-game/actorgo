@@ -1,4 +1,4 @@
-package cherryFacade
+package cfacade
 
 type (
 	// INetParser 前端网络数据包解析器

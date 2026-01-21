@@ -3,7 +3,7 @@ package pomeloClient
 import (
 	"time"
 
-	cfacade "github.com/cherry-game/cherry/facade"
+	cfacade "github.com/actorgo-game/actorgo/facade"
 )
 
 type (

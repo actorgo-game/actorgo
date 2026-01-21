@@ -1,7 +1,7 @@
-package cherryActor
+package cactor
 
 import (
-	cerror "github.com/cherry-game/cherry/error"
+	cerror "github.com/actorgo-game/actorgo/error"
 )
 
 var (

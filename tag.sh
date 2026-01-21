@@ -8,7 +8,7 @@ read -p "[TAG] enter new tag(eg. 1.3.14):" number
 echo ""
 
 
-echo "[TAG ${number}] cherry"
+echo "[TAG ${number}] actorgo"
 git tag -a "v${number}" -m "auto tag"
 
 echo "[TAG] ------------------------------------------------------"

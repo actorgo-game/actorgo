@@ -3,7 +3,7 @@ package pomeloClient
 import (
 	"time"
 
-	cmsg "github.com/cherry-game/cherry/net/parser/pomelo/message"
+	cmsg "github.com/actorgo-game/actorgo/net/parser/pomelo/message"
 )
 
 type (

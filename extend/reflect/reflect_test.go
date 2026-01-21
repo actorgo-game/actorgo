@@ -1,4 +1,4 @@
-package cherryReflect
+package creflect
 
 import (
 	"fmt"

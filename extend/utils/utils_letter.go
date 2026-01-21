@@ -1,5 +1,5 @@
-// Package cherryUtils file from https://github.com/gogf/gf
-package cherryUtils
+// Package file from https://github.com/gogf/gf
+package cutils
 
 // IsLetterUpper checks whether the given byte b is in upper case.
 func IsLetterUpper(b byte) bool {

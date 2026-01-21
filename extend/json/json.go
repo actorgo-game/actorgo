@@ -1,4 +1,4 @@
-package cherryJson
+package cjson
 
 import (
 	"os"

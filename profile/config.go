@@ -1,9 +1,9 @@
-package cherryProfile
+package cprofile
 
 import (
 	"time"
 
-	cfacade "github.com/cherry-game/cherry/facade"
+	cfacade "github.com/actorgo-game/actorgo/facade"
 	jsoniter "github.com/json-iterator/go"
 )
 

@@ -1,4 +1,4 @@
-package cherryTimeWheel
+package ctimewheel
 
 import (
 	"fmt"

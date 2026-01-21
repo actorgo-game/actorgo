@@ -1,4 +1,4 @@
-package cherryFile
+package cfile
 
 import (
 	"os"
@@ -8,8 +8,8 @@ import (
 	"sort"
 	"strings"
 
-	cerr "github.com/cherry-game/cherry/error"
-	cslice "github.com/cherry-game/cherry/extend/slice"
+	cerr "github.com/actorgo-game/actorgo/error"
+	cslice "github.com/actorgo-game/actorgo/extend/slice"
 )
 
 func JudgeFile(filePath string) (string, bool) {

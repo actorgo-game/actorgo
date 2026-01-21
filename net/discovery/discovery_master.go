@@ -1,25 +1,25 @@
-package cherryDiscovery
+package cdiscovery
 
 import (
 	"fmt"
 	"time"
 
-	ctime "github.com/cherry-game/cherry/extend/time"
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
-	cnats "github.com/cherry-game/cherry/net/nats"
-	cproto "github.com/cherry-game/cherry/net/proto"
-	cprofile "github.com/cherry-game/cherry/profile"
+	ctime "github.com/actorgo-game/actorgo/extend/time"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
+	cnats "github.com/actorgo-game/actorgo/net/nats"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
+	cprofile "github.com/actorgo-game/actorgo/profile"
 	"github.com/nats-io/nats.go"
 )
 
 // DiscoveryMaster master节点模式(master为单节点)
 // 先启动一个master节点
-// 其他节点启动时Request(cherry.discovery.register)，到master节点注册
-// master节点subscribe(cherry.discovery.register)，返回已注册节点列表
-// master节点publish(cherry.discovery.addMember)，当前已注册的节点到
-// 所有客户端节点subscribe(cherry.discovery.addMember)，接收新节点
-// 所有节点subscribe(cherry.discovery.unregister)，退出时注销节点
+// 其他节点启动时Request(actorgo.discovery.register)，到master节点注册
+// master节点subscribe(actorgo.discovery.register)，返回已注册节点列表
+// master节点publish(actorgo.discovery.addMember)，当前已注册的节点到
+// 所有客户端节点subscribe(actorgo.discovery.addMember)，接收新节点
+// 所有节点subscribe(actorgo.discovery.unregister)，退出时注销节点
 type DiscoveryMaster struct {
 	DiscoveryDefault
 	app              cfacade.IApplication
@@ -90,10 +90,10 @@ func (m *DiscoveryMaster) loadMember() {
 }
 
 func (m *DiscoveryMaster) init() {
-	m.registerSubject = m.buildSubject("cherry.%s.discovery.%s.register")
-	m.addSubject = m.buildSubject("cherry.%s.discovery.%s.add")
-	m.removeSubject = m.buildSubject("cherry.%s.discovery.%s.remove")
-	m.heartbeatSubject = m.buildSubject("cherry.%s.discovery.%s.heartbeat")
+	m.registerSubject = m.buildSubject("actorgo.%s.discovery.%s.register")
+	m.addSubject = m.buildSubject("actorgo.%s.discovery.%s.add")
+	m.removeSubject = m.buildSubject("actorgo.%s.discovery.%s.remove")
+	m.heartbeatSubject = m.buildSubject("actorgo.%s.discovery.%s.heartbeat")
 
 	// Node init
 	m.masterInit()

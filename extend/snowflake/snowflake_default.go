@@ -1,8 +1,8 @@
-package cherrySnowflake
+package csnowflake
 
 import (
-	ccrypto "github.com/cherry-game/cherry/extend/crypto"
-	clog "github.com/cherry-game/cherry/logger"
+	ccrypto "github.com/actorgo-game/actorgo/extend/crypto"
+	clog "github.com/actorgo-game/actorgo/logger"
 )
 
 var (

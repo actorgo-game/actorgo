@@ -1,4 +1,4 @@
-package cherryString
+package cstring
 
 import (
 	"fmt"

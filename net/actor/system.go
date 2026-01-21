@@ -1,15 +1,15 @@
-package cherryActor
+package cactor
 
 import (
 	"strings"
 	"sync"
 	"time"
 
-	ccode "github.com/cherry-game/cherry/code"
-	cutils "github.com/cherry-game/cherry/extend/utils"
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
-	cproto "github.com/cherry-game/cherry/net/proto"
+	ccode "github.com/actorgo-game/actorgo/ccode"
+	cutils "github.com/actorgo-game/actorgo/extend/utils"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
 )
 
 type (

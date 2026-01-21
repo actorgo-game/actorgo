@@ -1,6 +1,6 @@
-package cherryActor
+package cactor
 
-import cfacade "github.com/cherry-game/cherry/facade"
+import cfacade "github.com/actorgo-game/actorgo/facade"
 
 var (
 	Name = "actor_component"

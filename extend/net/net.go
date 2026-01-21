@@ -1,4 +1,4 @@
-package cherryNet
+package cnet
 
 import (
 	"net"

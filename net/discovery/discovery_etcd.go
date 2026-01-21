@@ -1,3 +1,3 @@
-package cherryDiscovery
+package cdiscovery
 
-// file from https://github.com/cherry-game/components/tree/master/etcd
+// file from https://github.com/actorgo-game/components/tree/master/etcd

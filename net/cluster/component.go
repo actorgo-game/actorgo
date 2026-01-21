@@ -1,8 +1,8 @@
-package cherryCluster
+package ccluster
 
 import (
-	cfacade "github.com/cherry-game/cherry/facade"
-	cnatsCluster "github.com/cherry-game/cherry/net/cluster/nats_cluster"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	cnatsCluster "github.com/actorgo-game/actorgo/net/cluster/nats_cluster"
 )
 
 const (

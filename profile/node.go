@@ -1,12 +1,12 @@
-package cherryProfile
+package cprofile
 
 import (
 	"fmt"
 	"regexp"
 	"strings"
 
-	cerr "github.com/cherry-game/cherry/error"
-	cfacade "github.com/cherry-game/cherry/facade"
+	cerr "github.com/actorgo-game/actorgo/error"
+	cfacade "github.com/actorgo-game/actorgo/facade"
 )
 
 // Node node info

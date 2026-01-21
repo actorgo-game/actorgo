@@ -1,9 +1,9 @@
-package cherryFacade
+package cfacade
 
 import (
 	"time"
 
-	cproto "github.com/cherry-game/cherry/net/proto"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
 )
 
 type (

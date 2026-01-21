@@ -1,4 +1,4 @@
-package cherrySlice
+package cslice
 
 import (
 	"fmt"

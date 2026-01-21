@@ -1,4 +1,4 @@
-package cherryFacade
+package cfacade
 
 type (
 	SID = string // session unique id

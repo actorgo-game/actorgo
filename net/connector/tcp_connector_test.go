@@ -1,11 +1,11 @@
-package cherryConnector
+package cconnector
 
 import (
 	"net"
 	"sync"
 	"testing"
 
-	clog "github.com/cherry-game/cherry/logger"
+	clog "github.com/actorgo-game/actorgo/logger"
 )
 
 func TestNewTCPConnector(t *testing.T) {

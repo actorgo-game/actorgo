@@ -1,15 +1,15 @@
-package cherryDiscovery
+package cdiscovery
 
 import (
 	"math/rand"
 	"sync"
 
-	cerr "github.com/cherry-game/cherry/error"
-	cslice "github.com/cherry-game/cherry/extend/slice"
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
-	cproto "github.com/cherry-game/cherry/net/proto"
-	cprofile "github.com/cherry-game/cherry/profile"
+	cerr "github.com/actorgo-game/actorgo/error"
+	cslice "github.com/actorgo-game/actorgo/extend/slice"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
+	cprofile "github.com/actorgo-game/actorgo/profile"
 )
 
 // DiscoveryDefault 默认方式，通过读取profile文件的节点信息

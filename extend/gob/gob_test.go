@@ -1,11 +1,11 @@
-package cherryGOB
+package cgob
 
 import (
 	"fmt"
 	"reflect"
 	"testing"
 
-	cproto "github.com/cherry-game/cherry/net/proto"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
 )
 
 func TestPB(t *testing.T) {

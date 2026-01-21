@@ -1,7 +1,7 @@
-package cherryConnector
+package cconnector
 
 import (
-	clog "github.com/cherry-game/cherry/logger"
+	clog "github.com/actorgo-game/actorgo/logger"
 )
 
 type (

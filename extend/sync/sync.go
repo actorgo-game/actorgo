@@ -1,4 +1,4 @@
-package cherrySync
+package csync
 
 import goSync "sync"
 

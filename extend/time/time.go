@@ -1,11 +1,11 @@
-// Package cherryTime code from: https://github.com/golang-module/carbon
-package cherryTime
+// Package code from: https://github.com/golang-module/carbon
+package ctime
 
 import (
 	"strconv"
 	"time"
 
-	cerr "github.com/cherry-game/cherry/error"
+	cerr "github.com/actorgo-game/actorgo/error"
 )
 
 const (
@@ -47,12 +47,12 @@ const (
 	ShortTimeFormat           = "150405"
 )
 
-type CherryTime struct {
+type ActorGoTime struct {
 	time.Time
 }
 
-func NewTime(tt time.Time, setGlobal bool) CherryTime {
-	ct := CherryTime{}
+func NewTime(tt time.Time, setGlobal bool) ActorGoTime {
+	ct := ActorGoTime{}
 
 	if setGlobal {
 		ct.Time = tt.In(offsetLocation).Add(offsetTime)
@@ -63,30 +63,30 @@ func NewTime(tt time.Time, setGlobal bool) CherryTime {
 	return ct
 }
 
-func NewSecond(second int64) CherryTime {
+func NewSecond(second int64) ActorGoTime {
 	return NewTime(time.Unix(second, 0), true)
 }
 
-func NewMillisecond(millisecond int64) CherryTime {
+func NewMillisecond(millisecond int64) ActorGoTime {
 	return NewTime(time.UnixMilli(millisecond), true)
 }
 
-func Now() CherryTime {
+func Now() ActorGoTime {
 	return NewTime(time.Now(), true)
 }
 
-func Yesterday() CherryTime {
+func Yesterday() ActorGoTime {
 	t := time.Now().AddDate(0, 0, -1)
 	return NewTime(t, true)
 }
 
-func Tomorrow() CherryTime {
+func Tomorrow() ActorGoTime {
 	t := Now().AddDate(0, 0, 1)
 	return NewTime(t, true)
 }
 
 // CreateFromTimestamp 从时间戳创建 Carbon 实例
-func CreateFromTimestamp(timestamp int64) CherryTime {
+func CreateFromTimestamp(timestamp int64) ActorGoTime {
 	var ts int64
 
 	switch len(strconv.FormatInt(timestamp, 10)) {
@@ -107,20 +107,20 @@ func CreateFromTimestamp(timestamp int64) CherryTime {
 }
 
 // CreateFromDateTime 从年月日时分秒创建 Carbon 实例
-func CreateFromDateTime(year int, month int, day int, hour int, minute int, second int) CherryTime {
+func CreateFromDateTime(year int, month int, day int, hour int, minute int, second int) ActorGoTime {
 	t := time.Date(year, time.Month(month), day, hour, minute, second, 0, offsetLocation)
 	return NewTime(t, false)
 }
 
 // CreateFromDate 从年月日创建 Carbon 实例(默认时区)
-func CreateFromDate(year int, month int, day int) CherryTime {
+func CreateFromDate(year int, month int, day int) ActorGoTime {
 	now := Now()
 	t := time.Date(year, time.Month(month), day, now.Hour(), now.Minute(), now.Second(), 0, now.Location())
 	return NewTime(t, false)
 }
 
 // CreateFromTime 从时分秒创建 Carbon 实例(默认时区)
-func CreateFromTime(hour int, minute int, second int) CherryTime {
+func CreateFromTime(hour int, minute int, second int) ActorGoTime {
 	now := Now()
 	t := time.Date(now.Year(), now.Time.Month(), now.Day(), hour, minute, second, 0, now.Location())
 	return NewTime(t, false)

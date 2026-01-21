@@ -1,11 +1,11 @@
-package cherryActor
+package cactor
 
 import (
 	"time"
 
-	cherryTimeWheel "github.com/cherry-game/cherry/extend/time_wheel"
-	cutils "github.com/cherry-game/cherry/extend/utils"
-	clog "github.com/cherry-game/cherry/logger"
+	ctimeWheel "github.com/actorgo-game/actorgo/extend/time_wheel"
+	cutils "github.com/actorgo-game/actorgo/extend/utils"
+	clog "github.com/actorgo-game/actorgo/logger"
 )
 
 type (
@@ -16,7 +16,7 @@ type (
 	}
 
 	timerInfo struct {
-		timer *cherryTimeWheel.Timer
+		timer *ctimeWheel.Timer
 		fn    func()
 		once  bool
 	}
@@ -93,7 +93,7 @@ func (p *actorTimer) AddOnce(delay time.Duration, fn func(), async ...bool) uint
 }
 
 func (p *actorTimer) AddFixedHour(hour, minute, second int, fn func(), async ...bool) uint64 {
-	schedule := &cherryTimeWheel.FixedDateSchedule{
+	schedule := &ctimeWheel.FixedDateSchedule{
 		Hour:   hour,
 		Minute: minute,
 		Second: second,
@@ -134,7 +134,7 @@ func (p *actorTimer) RemoveAll() {
 	}
 }
 
-func (p *actorTimer) addTimerInfo(timer *cherryTimeWheel.Timer, fn func(), once bool) {
+func (p *actorTimer) addTimerInfo(timer *ctimeWheel.Timer, fn func(), once bool) {
 	p.timerInfoMap[timer.ID()] = &timerInfo{
 		timer: timer,
 		fn:    fn,

@@ -1,13 +1,13 @@
-package cherryProfile
+package cprofile
 
 import (
 	"path/filepath"
 
-	cerror "github.com/cherry-game/cherry/error"
-	cfile "github.com/cherry-game/cherry/extend/file"
-	cjson "github.com/cherry-game/cherry/extend/json"
-	cstring "github.com/cherry-game/cherry/extend/string"
-	cfacade "github.com/cherry-game/cherry/facade"
+	cerror "github.com/actorgo-game/actorgo/error"
+	cfile "github.com/actorgo-game/actorgo/extend/file"
+	cjson "github.com/actorgo-game/actorgo/extend/json"
+	cstring "github.com/actorgo-game/actorgo/extend/string"
+	cfacade "github.com/actorgo-game/actorgo/facade"
 )
 
 var (
@@ -17,7 +17,7 @@ var (
 		jsonConfig  *Config // profile-x.json parse to json object
 		env         string  // env name
 		debug       bool    // debug default is true
-		printLevel  string  // cherry log print level
+		printLevel  string  // log print level
 	}{}
 )
 

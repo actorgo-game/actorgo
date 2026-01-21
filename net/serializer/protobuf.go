@@ -1,7 +1,7 @@
-package cherrySerializer
+package cserializer
 
 import (
-	cerr "github.com/cherry-game/cherry/error"
+	cerr "github.com/actorgo-game/actorgo/error"
 	"google.golang.org/protobuf/proto"
 )
 

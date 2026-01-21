@@ -1,4 +1,4 @@
-package cherryConst
+package cconst
 
 import (
 	"testing"

@@ -1,4 +1,4 @@
-package cherrySerializer
+package cserializer
 
 import (
 	jsoniter "github.com/json-iterator/go"

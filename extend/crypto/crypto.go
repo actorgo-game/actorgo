@@ -1,4 +1,4 @@
-package cherryCrypto
+package ccrypto
 
 import (
 	"crypto/md5"

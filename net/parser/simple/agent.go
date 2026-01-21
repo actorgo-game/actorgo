@@ -6,12 +6,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	cnet "github.com/cherry-game/cherry/extend/net"
-	ctime "github.com/cherry-game/cherry/extend/time"
-	cutils "github.com/cherry-game/cherry/extend/utils"
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
-	cproto "github.com/cherry-game/cherry/net/proto"
+	cnet "github.com/actorgo-game/actorgo/extend/net"
+	ctime "github.com/actorgo-game/actorgo/extend/time"
+	cutils "github.com/actorgo-game/actorgo/extend/utils"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
 	"go.uber.org/zap/zapcore"
 )
 

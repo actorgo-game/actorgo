@@ -1,14 +1,14 @@
-package cherryNatsCluster
+package cnatscluster
 
 import (
 	"fmt"
 )
 
 const (
-	localSubjectFormat      = "cherry-%s.local.%s.%s"   // cherry.{prefix}.local.{nodeType}.{nodeID}
-	remoteSubjectFormat     = "cherry-%s.remote.%s.%s"  // cherry.{prefix}.remote.{nodeType}.{nodeID}
-	remoteTypeSubjectFormat = "cherry-%s.remoteType.%s" // cherry.{prefix}.remoteType.{nodeType}
-	replySubjectFormat      = "cherry-%s.reply.%s.%s"   // cherry.{prefix}.reply.{nodeType}.{nodeID}
+	localSubjectFormat      = "actorgo-%s.local.%s.%s"   // actorgo.{prefix}.local.{nodeType}.{nodeID}
+	remoteSubjectFormat     = "actorgo-%s.remote.%s.%s"  // actorgo.{prefix}.remote.{nodeType}.{nodeID}
+	remoteTypeSubjectFormat = "actorgo-%s.remoteType.%s" // actorgo.{prefix}.remoteType.{nodeType}
+	replySubjectFormat      = "actorgo-%s.reply.%s.%s"   // actorgo.{prefix}.reply.{nodeType}.{nodeID}
 
 )
 

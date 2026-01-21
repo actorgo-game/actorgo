@@ -1,18 +1,18 @@
-package cherryActor
+package cactor
 
 import (
 	"reflect"
 
 	"google.golang.org/protobuf/proto"
 
-	ccode "github.com/cherry-game/cherry/code"
-	cerror "github.com/cherry-game/cherry/error"
-	creflect "github.com/cherry-game/cherry/extend/reflect"
-	cutils "github.com/cherry-game/cherry/extend/utils"
-	cfacade "github.com/cherry-game/cherry/facade"
-	clog "github.com/cherry-game/cherry/logger"
-	cnats "github.com/cherry-game/cherry/net/nats"
-	cproto "github.com/cherry-game/cherry/net/proto"
+	ccode "github.com/actorgo-game/actorgo/ccode"
+	cerror "github.com/actorgo-game/actorgo/error"
+	creflect "github.com/actorgo-game/actorgo/extend/reflect"
+	cutils "github.com/actorgo-game/actorgo/extend/utils"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
+	cnats "github.com/actorgo-game/actorgo/net/nats"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
 )
 
 func InvokeLocalFunc(app cfacade.IApplication, fi *creflect.FuncInfo, m *cfacade.Message) {
