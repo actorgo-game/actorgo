@@ -1,0 +1,43 @@
+package csnowflake
+
+import (
+	ccrypto "github.com/actorgo-game/actorgo/extend/crypto"
+	clog "github.com/actorgo-game/actorgo/logger"
+)
+
+var (
+	defaultNode *Node
+)
+
+func InitDefaultNode(str string) {
+	var (
+		crc32Value = int64(ccrypto.CRC32(str))
+		nodeValue  = crc32Value % nodeMax
+	)
+
+	SetDefaultNode(nodeValue)
+}
+
+func SetDefaultNode(nodeValue int64) {
+	if defaultNode != nil {
+		clog.Warn("default snowflake node is created.")
+		return
+	}
+
+	var err error
+	defaultNode, err = NewNode(nodeValue)
+	if err != nil {
+		clog.Warn(err)
+		clog.Warn("create default snowflake node fail. nodeValue = %d", nodeValue)
+	}
+
+	clog.Info("[snowflake] nodeValue = %d, nodeMax = %d", nodeValue, nodeMax)
+}
+
+func Next() ID {
+	return defaultNode.Generate()
+}
+
+func NextID() int64 {
+	return defaultNode.Generate().Int64()
+}

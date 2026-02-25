@@ -1,0 +1,177 @@
+package cactor
+
+import (
+	"reflect"
+
+	"google.golang.org/protobuf/proto"
+
+	ccode "github.com/actorgo-game/actorgo/ccode"
+	cerror "github.com/actorgo-game/actorgo/error"
+	creflect "github.com/actorgo-game/actorgo/extend/reflect"
+	cutils "github.com/actorgo-game/actorgo/extend/utils"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
+	cnats "github.com/actorgo-game/actorgo/net/nats"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
+)
+
+func InvokeLocalFunc(app cfacade.IApplication, fi *creflect.FuncInfo, m *cfacade.Message) {
+	if app == nil {
+		clog.Error("[InvokeLocalFunc] app is nil. [message = %+v]", m)
+		return
+	}
+
+	EncodeLocalArgs(app, fi, m)
+
+	values := make([]reflect.Value, 2)
+	values[0] = reflect.ValueOf(m.Session) // session
+	values[1] = reflect.ValueOf(m.Args)    // args
+	fi.Value.Call(values)
+}
+
+func InvokeRemoteFunc(app cfacade.IApplication, fi *creflect.FuncInfo, m *cfacade.Message) {
+	if app == nil {
+		clog.Error("[InvokeRemoteFunc] app is nil. [message = %+v]", m)
+		return
+	}
+
+	EncodeRemoteArgs(app, fi, m)
+
+	values := make([]reflect.Value, fi.InArgsLen)
+	if fi.InArgsLen > 0 {
+		values[0] = reflect.ValueOf(m.Args) // args
+	}
+
+	if m.IsCluster {
+		rets := fi.Value.Call(values)
+
+		if m.Reply == "" {
+			return
+		}
+
+		cutils.Try(func() {
+			rsp := retValue(app.Serializer(), rets)
+			retResponse(m, rsp)
+		}, func(errString string) {
+			retResponse(m, &cproto.Response{
+				Code: ccode.RPCRemoteExecuteError,
+			})
+			clog.Error("[InvokeRemoteFunc] invoke error. [message = %+v, err = %s]", m, errString)
+		})
+	} else {
+		cutils.Try(func() {
+			if m.ChanResult == nil {
+				fi.Value.Call(values)
+			} else {
+				rets := fi.Value.Call(values)
+				rsp := retValue(app.Serializer(), rets)
+				m.ChanResult <- rsp
+			}
+		}, func(errString string) {
+			if m.ChanResult != nil {
+				m.ChanResult <- nil
+			}
+
+			clog.Error("[InvokeRemoteFunc] invoke error.[source = %s, target = %s -> %s, funcType = %v, err = %+v]",
+				m.Source,
+				m.Target,
+				m.FuncName,
+				fi.InArgs,
+				errString,
+			)
+		})
+	}
+}
+
+func EncodeRemoteArgs(app cfacade.IApplication, fi *creflect.FuncInfo, m *cfacade.Message) error {
+	if m.IsCluster {
+		if fi.InArgsLen == 0 || m.Args == nil {
+			return nil
+		}
+
+		return EncodeArgs(app, fi, 0, m)
+	}
+
+	return nil
+}
+
+func EncodeLocalArgs(app cfacade.IApplication, fi *creflect.FuncInfo, m *cfacade.Message) error {
+	return EncodeArgs(app, fi, 1, m)
+}
+
+func EncodeArgs(app cfacade.IApplication, fi *creflect.FuncInfo, index int, m *cfacade.Message) error {
+	argBytes, ok := m.Args.([]byte)
+	if !ok {
+		return cerror.Errorf("Encode args error.[source = %s, target = %s -> %s, funcType = %v]",
+			m.Source,
+			m.Target,
+			m.FuncName,
+			fi.InArgs,
+		)
+	}
+
+	argValue := reflect.New(fi.InArgs[index].Elem()).Interface()
+	err := app.Serializer().Unmarshal(argBytes, argValue)
+	if err != nil {
+		return cerror.Errorf("Encode args unmarshal error.[source = %s, target = %s -> %s, funcType = %v]",
+			m.Source,
+			m.Target,
+			m.FuncName,
+			fi.InArgs,
+		)
+	}
+
+	m.Args = argValue
+
+	return nil
+}
+
+func retValue(serializer cfacade.ISerializer, rets []reflect.Value) *cproto.Response {
+	rsp := &cproto.Response{
+		Code: ccode.OK,
+	}
+
+	retsLen := len(rets)
+	switch retsLen {
+	case 1:
+		if val := rets[0].Interface(); val != nil {
+			if c, ok := val.(int32); ok {
+				rsp.Code = c
+			}
+		}
+	case 2:
+		if !rets[0].IsNil() {
+			data, err := serializer.Marshal(rets[0].Interface())
+			if err != nil {
+				rsp.Code = ccode.RPCRemoteExecuteError
+				clog.Warn(err)
+			} else {
+				rsp.Data = data
+			}
+		}
+
+		if val := rets[1].Interface(); val != nil {
+			if c, ok := val.(int32); ok {
+				rsp.Code = c
+			}
+		}
+	}
+
+	return rsp
+}
+
+func retResponse(m *cfacade.Message, rsp *cproto.Response) {
+	rspData, _ := proto.Marshal(rsp)
+
+	rspMsg := cnats.GetMsg()
+	rspMsg.Header = m.Header
+	rspMsg.Subject = m.Reply
+	rspMsg.Data = rspData
+
+	if err := cnats.GetConnect().PublishMsg(rspMsg); err != nil {
+		clog.Warn(err)
+	}
+
+	cnats.ReleaseMsg(rspMsg)
+	m.Destory()
+}

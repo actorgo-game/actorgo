@@ -1,0 +1,321 @@
+package cnatscluster
+
+import (
+	"time"
+
+	"google.golang.org/protobuf/proto"
+
+	ccode "github.com/actorgo-game/actorgo/ccode"
+	cerror "github.com/actorgo-game/actorgo/error"
+	cfacade "github.com/actorgo-game/actorgo/facade"
+	clog "github.com/actorgo-game/actorgo/logger"
+	cnats "github.com/actorgo-game/actorgo/net/nats"
+	cproto "github.com/actorgo-game/actorgo/net/proto"
+	cprofile "github.com/actorgo-game/actorgo/profile"
+	"github.com/nats-io/nats.go"
+)
+
+type (
+	Cluster struct {
+		app               cfacade.IApplication
+		prefix            string
+		localSubject      string
+		remoteSubject     string
+		replySubject      string
+		remoteTypeSubject string
+	}
+)
+
+func New(app cfacade.IApplication) cfacade.ICluster {
+	cluster := &Cluster{
+		app: app,
+	}
+
+	return cluster
+}
+
+func (p *Cluster) loadNatsConfig() {
+	natsConfig := cprofile.GetConfig("cluster").GetConfig("nats")
+	if natsConfig.LastError() != nil {
+		panic("cluster->nats config not found.")
+	}
+
+	p.prefix = natsConfig.GetString("prefix", "node")
+	p.localSubject = GetLocalSubject(p.prefix, p.app.NodeType(), p.app.NodeID())
+	p.remoteSubject = GetRemoteSubject(p.prefix, p.app.NodeType(), p.app.NodeID())
+	p.remoteTypeSubject = GetRemoteTypeSubject(p.prefix, p.app.NodeType())
+	p.replySubject = GetReplySubject(p.prefix, p.app.NodeType(), p.app.NodeID())
+
+	cnats.NewPool(p.replySubject, natsConfig, true)
+}
+
+func (p *Cluster) Init() {
+	p.loadNatsConfig()
+
+	p.localProcess()
+	p.remoteProcess()
+	p.remoteTypeProcess()
+
+	clog.Info("Nats cluster execute OnInit().")
+}
+
+func (p *Cluster) Stop() {
+	cnats.ConnectClose()
+
+	clog.Info("Nats cluster execute OnStop().")
+}
+
+func (p *Cluster) localProcess() {
+	process := func(natsMsg *nats.Msg) {
+		packet, err := cproto.UnmarshalPacket(natsMsg.Data)
+		defer packet.Recycle()
+
+		if err != nil {
+			clog.Warn("[localProcess] Unmarshal fail. [subject = %s, %s, err = %s]",
+				natsMsg.Subject,
+				packet.PrintLog(),
+				err,
+			)
+			return
+		}
+
+		message := cfacade.BuildClusterMessage(packet)
+		p.app.ActorSystem().PostLocal(&message)
+	}
+
+	conn := cnats.GetConnect()
+	err := conn.Subscribe(p.localSubject, process)
+	if err != nil {
+		clog.Error("[localProcess] Create subscribe fail. [subject = %s, err = %v]",
+			p.localSubject,
+			err,
+		)
+	}
+}
+
+func (p *Cluster) remoteProcess() {
+	process := func(natsMsg *nats.Msg) {
+		packet, err := cproto.UnmarshalPacket(natsMsg.Data)
+		defer packet.Recycle()
+
+		if err != nil {
+			clog.Warn("[remoteProcess] Unmarshal fail. [subject = %s, %s, err = %v]",
+				natsMsg.Subject,
+				packet.PrintLog(),
+				err,
+			)
+			return
+		}
+
+		message := cfacade.BuildClusterMessage(packet)
+
+		if len(natsMsg.Reply) > 0 {
+			message.Header = natsMsg.Header
+			message.Reply = natsMsg.Reply
+		}
+
+		p.app.ActorSystem().PostRemote(&message)
+	}
+
+	conn := cnats.GetConnect()
+	err := conn.Subscribe(p.remoteSubject, process)
+	if err != nil {
+		clog.Error("[remoteProcess] Create subscribe fail. [subject = %s, err = %v]",
+			p.remoteSubject,
+			err,
+		)
+	}
+}
+
+func (p *Cluster) remoteTypeProcess() {
+	process := func(natsMsg *nats.Msg) {
+		packet, err := cproto.UnmarshalPacket(natsMsg.Data)
+		defer packet.Recycle()
+
+		if err != nil {
+			clog.Warn("[remoteTypeProcess] Unmarshal fail. [subject = %s, %s, err = %v]",
+				natsMsg.Subject,
+				packet.PrintLog(),
+				err,
+			)
+			return
+		}
+
+		message := cfacade.BuildClusterMessage(packet)
+
+		p.app.ActorSystem().PostRemote(&message)
+	}
+
+	conn := cnats.GetConnect()
+	err := conn.Subscribe(p.remoteTypeSubject, process)
+	if err != nil {
+		clog.Error("[remoteTypeProcess] Create subscribe fail. [subject = %s, err = %v]",
+			p.remoteSubject,
+			err,
+		)
+	}
+}
+
+func (p *Cluster) PublishLocal(nodeID string, cpacket *cproto.ClusterPacket) error {
+	defer cpacket.Recycle()
+
+	nodeType, err := p.app.Discovery().GetType(nodeID)
+	if err != nil {
+		clog.Warn("[PublishLocal] Get node type fail. [nodeID = %s, packet = %s, err = %v]",
+			nodeID,
+			cpacket.PrintLog(),
+			err,
+		)
+		return cerror.DiscoveryNotFoundNode
+	}
+
+	bytes, err := proto.Marshal(cpacket)
+	if err != nil {
+		clog.Warn("[PublishLocal] Marshal error. [nodeID = %s, packet = %s, err = %v]",
+			nodeID,
+			cpacket.PrintLog(),
+			err,
+		)
+		return cerror.ClusterPacketMarshalFail
+	}
+
+	subject := GetLocalSubject(p.prefix, nodeType, nodeID)
+	err = cnats.GetConnect().Publish(subject, bytes)
+	if err != nil {
+		clog.Warn("[PublishLocal] Nats publish fail. [nodeID = %s, %s, err = %v]",
+			nodeID,
+			cpacket.PrintLog(),
+			err,
+		)
+
+		return cerror.ClusterPublishFail
+	}
+
+	return nil
+}
+
+func (p *Cluster) PublishRemote(nodeID string, cpacket *cproto.ClusterPacket) error {
+	defer cpacket.Recycle()
+
+	nodeType, err := p.app.Discovery().GetType(nodeID)
+	if err != nil {
+		clog.Warn("[PublishRemote] Get node type fail. [nodeID = %s, %s, err = %v]",
+			nodeID,
+			cpacket.PrintLog(),
+			err,
+		)
+		return cerror.DiscoveryNotFoundNode
+	}
+
+	bytes, err := proto.Marshal(cpacket)
+	if err != nil {
+		clog.Warn("[PublishRemote] Marshal error. [nodeID = %s, packet = %s, err = %v]",
+			nodeID,
+			cpacket.PrintLog(),
+			err,
+		)
+		return cerror.ClusterPacketMarshalFail
+	}
+
+	subject := GetRemoteSubject(p.prefix, nodeType, nodeID)
+	err = cnats.GetConnect().Publish(subject, bytes)
+	if err != nil {
+		clog.Warn("[PublishRemote] Nats publish fail. [nodeID = %s, %s, err = %v]",
+			nodeID,
+			cpacket.PrintLog(),
+			err,
+		)
+
+		return cerror.ClusterPublishFail
+	}
+
+	return nil
+}
+
+func (p *Cluster) PublishRemoteType(nodeType string, cpacket *cproto.ClusterPacket) error {
+	defer cpacket.Recycle()
+
+	bytes, err := proto.Marshal(cpacket)
+	if err != nil {
+		clog.Warn("[PublishRemoteType] Marshal error. [nodeType = %s, packet = %s, err = %v]",
+			nodeType,
+			cpacket.PrintLog(),
+			err,
+		)
+		return cerror.ClusterPacketMarshalFail
+	}
+
+	if nodeType == "" {
+		return cerror.ClusterNodeTypeIsNil
+	}
+
+	if members := p.app.Discovery().ListByType(nodeType); len(members) < 1 {
+		return cerror.ClusterNodeTypeMemberNotFound
+	}
+
+	subject := GetRemoteTypeSubject(p.prefix, nodeType)
+	err = cnats.GetConnect().Publish(subject, bytes)
+	if err != nil {
+		clog.Warn("[PublishRemoteType] Nats publish fail. [nodeType = %s, %s, err = %v]",
+			nodeType,
+			cpacket.PrintLog(),
+			err,
+		)
+
+		return cerror.ClusterPublishFail
+	}
+
+	return nil
+}
+
+func (p *Cluster) RequestRemote(nodeID string, cpacket *cproto.ClusterPacket, timeout ...time.Duration) ([]byte, int32) {
+	defer cpacket.Recycle()
+
+	nodeType, err := p.app.Discovery().GetType(nodeID)
+	if err != nil {
+		clog.Warn("[RequestRemote] Get node type fail. [nodeID = %s, %s, err = %v]",
+			nodeID,
+			cpacket.PrintLog(),
+			err,
+		)
+
+		return nil, ccode.DiscoveryNotFoundNode
+	}
+
+	msg, err := proto.Marshal(cpacket)
+	if err != nil {
+		clog.Warn("[RequestRemote] Marshal fail. [nodeID = %s, %s, err = %v]",
+			nodeID,
+			cpacket.PrintLog(),
+			err,
+		)
+
+		return nil, ccode.RPCMarshalError
+	}
+
+	subject := GetRemoteSubject(p.prefix, nodeType, nodeID)
+	natsData, err := cnats.GetConnect().RequestSync(subject, msg, timeout...)
+	if err != nil {
+		clog.Warn("[RequestRemote] Nats request fail. [nodeID = %s, %s, err = %v]",
+			nodeID,
+			cpacket.PrintLog(),
+			err,
+		)
+
+		return nil, ccode.RPCRemoteExecuteError
+	}
+
+	rsp := &cproto.Response{}
+	if err = proto.Unmarshal(natsData, rsp); err != nil {
+		clog.Warn("[RequestRemote] unmarshal fail. [nodeID = %s, %s, rsp = %v, err = %v]",
+			nodeID,
+			cpacket.PrintLog(),
+			rsp,
+			err,
+		)
+
+		return nil, ccode.RPCUnmarshalError
+	}
+
+	return rsp.Data, rsp.Code
+}
