@@ -80,7 +80,7 @@ func (p *Cluster) localProcess() {
 		}
 
 		message := cfacade.BuildClusterMessage(packet)
-		p.app.ActorSystem().PostLocal(&message)
+		p.app.ActorSystem().PostLocal(message)
 	}
 
 	conn := cnats.GetConnect()
@@ -114,7 +114,7 @@ func (p *Cluster) remoteProcess() {
 			message.Reply = natsMsg.Reply
 		}
 
-		p.app.ActorSystem().PostRemote(&message)
+		p.app.ActorSystem().PostRemote(message)
 	}
 
 	conn := cnats.GetConnect()
@@ -143,7 +143,7 @@ func (p *Cluster) remoteTypeProcess() {
 
 		message := cfacade.BuildClusterMessage(packet)
 
-		p.app.ActorSystem().PostRemote(&message)
+		p.app.ActorSystem().PostRemote(message)
 	}
 
 	conn := cnats.GetConnect()

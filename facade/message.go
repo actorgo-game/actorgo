@@ -2,6 +2,7 @@ package cfacade
 
 import (
 	"strings"
+	"sync"
 
 	cconst "github.com/actorgo-game/actorgo/const"
 	cerr "github.com/actorgo-game/actorgo/error"
@@ -36,51 +37,45 @@ type (
 	}
 )
 
-//var (
-//	messagePool = &sync.Pool{
-//		New: func() interface{} {
-//			return new(Message)
-//		},
-//	}
-//)
+var messagePool = sync.Pool{
+	New: func() any {
+		return &Message{}
+	},
+}
 
-func GetMessage() Message {
-	msg := Message{
-		BuildTime: ctime.Now().ToMillisecond(),
-	}
-
+func GetMessage() *Message {
+	msg := messagePool.Get().(*Message)
+	msg.BuildTime = ctime.Now().ToMillisecond()
 	return msg
 }
 
-func BuildClusterMessage(packet *cproto.ClusterPacket) Message {
-	message := Message{
-		BuildTime: packet.BuildTime,
-		Source:    packet.SourcePath,
-		Target:    packet.TargetPath,
-		FuncName:  packet.FuncName,
-		IsCluster: true,
-		Session:   packet.Session,
-		Args:      packet.ArgBytes,
-	}
-
-	return message
+func BuildClusterMessage(packet *cproto.ClusterPacket) *Message {
+	msg := messagePool.Get().(*Message)
+	msg.BuildTime = packet.BuildTime
+	msg.Source = packet.SourcePath
+	msg.Target = packet.TargetPath
+	msg.FuncName = packet.FuncName
+	msg.IsCluster = true
+	msg.Session = packet.Session
+	msg.Args = packet.ArgBytes
+	return msg
 }
 
-//func (p *Message) Recycle() {
-//	p.BuildTime = 0
-//	p.PostTime = 0
-//	p.Source = ""
-//	p.Target = ""
-//	p.targetPath = nil
-//	p.FuncName = "_"
-//	p.Session = nil
-//	p.Args = nil
-//	p.Err = nil
-//	p.ClusterReply = nil
-//	p.ChanResult = nil
-//	p.IsCluster = false
-//	messagePool.Put(p)
-//}
+func (p *Message) Recycle() {
+	p.BuildTime = 0
+	p.PostTime = 0
+	p.Source = ""
+	p.Target = ""
+	p.targetPath = nil
+	p.FuncName = ""
+	p.Session = nil
+	p.Args = nil
+	p.Header = nil
+	p.Reply = ""
+	p.ChanResult = nil
+	p.IsCluster = false
+	messagePool.Put(p)
+}
 
 func (p *Message) TargetPath() *ActorPath {
 	if p.targetPath == nil {

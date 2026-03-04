@@ -1,9 +1,16 @@
 package cactor
 
 import (
+	"sync"
 	"sync/atomic"
 	"unsafe"
 )
+
+var queueNodePool = sync.Pool{
+	New: func() any {
+		return &queueNode{}
+	},
+}
 
 type (
 	queue struct {
@@ -34,8 +41,9 @@ func (p *queue) Push(v any) {
 		return
 	}
 
-	n := new(queueNode)
+	n := queueNodePool.Get().(*queueNode)
 	n.val = v
+	n.next = nil
 	// current producer acquires head node
 	prev := (*queueNode)(atomic.SwapPointer((*unsafe.Pointer)(unsafe.Pointer(&p.head)), unsafe.Pointer(n)))
 
@@ -52,6 +60,9 @@ func (p *queue) Pop() any {
 		p.tail = next
 		v := next.val
 		next.val = nil
+		// recycle the consumed stub node (tail), not next
+		tail.next = nil
+		queueNodePool.Put(tail)
 		p._setCount(-1)
 		return v
 	}
