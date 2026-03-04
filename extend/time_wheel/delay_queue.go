@@ -10,7 +10,7 @@ import (
 // The start of PriorityQueue implementation.
 // Borrowed from https://github.com/nsqio/nsq/blob/master/internal/pqueue/pqueue.go
 type item struct {
-	Value    interface{}
+	Value    any
 	Priority int64
 	Index    int
 }
@@ -37,7 +37,7 @@ func (pq priorityQueue) Swap(i, j int) {
 	pq[j].Index = j
 }
 
-func (pq *priorityQueue) Push(x interface{}) {
+func (pq *priorityQueue) Push(x any) {
 	n := len(*pq)
 	c := cap(*pq)
 	if n+1 > c {
@@ -51,7 +51,7 @@ func (pq *priorityQueue) Push(x interface{}) {
 	(*pq)[n] = value
 }
 
-func (pq *priorityQueue) Pop() interface{} {
+func (pq *priorityQueue) Pop() any {
 	n := len(*pq)
 	c := cap(*pq)
 	if n < (c/2) && c > 25 {
@@ -86,7 +86,7 @@ func (pq *priorityQueue) PeekAndShift(maxValue int64) (*item, int64) {
 // an element can only be taken when its delay has expired. The head of the
 // queue is the *Delayed* element whose delay expired furthest in the past.
 type DelayQueue struct {
-	C        chan interface{}
+	C        chan any
 	mu       sync.Mutex
 	pq       priorityQueue
 	sleeping int32 // Similar to the sleeping state of runtime.timers.
@@ -96,14 +96,14 @@ type DelayQueue struct {
 // NewDelayQueue creates an instance of delayQueue with the specified size.
 func NewDelayQueue(size int) *DelayQueue {
 	return &DelayQueue{
-		C:       make(chan interface{}),
+		C:       make(chan any),
 		pq:      newPriorityQueue(size),
 		wakeupC: make(chan struct{}),
 	}
 }
 
 // Offer inserts the element into the current queue.
-func (dq *DelayQueue) Offer(elem interface{}, expiration int64) {
+func (dq *DelayQueue) Offer(elem any, expiration int64) {
 	value := &item{Value: elem, Priority: expiration}
 
 	dq.mu.Lock()
@@ -149,11 +149,13 @@ func (dq *DelayQueue) Poll(exitC chan struct{}, nowF func() int64) {
 				}
 			} else if delta > 0 {
 				// At least one item is pending.
+				timer := time.NewTimer(time.Duration(delta) * time.Millisecond)
 				select {
 				case <-dq.wakeupC:
+					timer.Stop()
 					// A new item with an "earlier" expiration than the current "earliest" one is added.
 					continue
-				case <-time.After(time.Duration(delta) * time.Millisecond):
+				case <-timer.C:
 					// The current "earliest" item expires.
 
 					// Reset the sleeping state since there's no need to receive from wakeupC.
@@ -164,6 +166,7 @@ func (dq *DelayQueue) Poll(exitC chan struct{}, nowF func() int64) {
 					}
 					continue
 				case <-exitC:
+					timer.Stop()
 					goto exit
 				}
 			}

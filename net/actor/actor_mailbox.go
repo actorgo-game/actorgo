@@ -21,7 +21,7 @@ func newMailbox(name string) mailbox {
 	}
 }
 
-func (p *mailbox) Register(funcName string, fn interface{}) {
+func (p *mailbox) Register(funcName string, fn any) {
 	if funcName == "" || len(funcName) < 1 {
 		clog.Error("[%s] Func name is empty.", fn)
 		return
@@ -69,9 +69,6 @@ func (p *mailbox) Push(m *cfacade.Message) {
 }
 
 func (p *mailbox) onStop() {
-	for key := range p.funcMap {
-		delete(p.funcMap, key)
-	}
-
+	clear(p.funcMap)
 	p.queue.Destroy()
 }

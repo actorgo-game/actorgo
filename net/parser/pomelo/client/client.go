@@ -136,7 +136,7 @@ func (p *Client) AddAction(actionFn ActionFn) {
 	p.actionChan <- actionFn
 }
 
-func (p *Client) Request(route string, val interface{}) (*pomeloMessage.Message, error) {
+func (p *Client) Request(route string, val any) (*pomeloMessage.Message, error) {
 	id, err := p.Send(pomeloMessage.Request, route, val)
 	if err != nil {
 		return nil, err
@@ -172,7 +172,7 @@ func (p *Client) Request(route string, val interface{}) (*pomeloMessage.Message,
 }
 
 // Notify sends a notify to the server
-func (p *Client) Notify(route string, val interface{}) error {
+func (p *Client) Notify(route string, val any) error {
 	_, err := p.Send(pomeloMessage.Notify, route, val)
 	if err != nil {
 		return err
@@ -249,7 +249,7 @@ func (p *Client) handlePackets() {
 	for p.connected {
 		packets, err := p.getPackets()
 		if err != nil {
-			clog.Warn(err)
+			clog.Warn("%v", err)
 			break
 		}
 
@@ -288,7 +288,7 @@ func (p *Client) handleData() {
 		case actionFn := <-p.actionChan:
 			{
 				if err := actionFn(); err != nil {
-					clog.Warn(err)
+					clog.Warn("%v", err)
 					if p.isErrorBreak {
 						return
 					}
@@ -362,7 +362,7 @@ func (p *Client) getPackets() ([]*pomeloPacket.Packet, error) {
 }
 
 // Send the message to the server
-func (p *Client) Send(msgType pomeloMessage.Type, route string, val interface{}) (uint, error) {
+func (p *Client) Send(msgType pomeloMessage.Type, route string, val any) (uint, error) {
 	data, err := p.serializer.Marshal(val)
 	if err != nil {
 		return 0, cerr.Errorf("serializer error.[route = %s, val =%v]", route, val)

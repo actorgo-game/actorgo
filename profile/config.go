@@ -13,19 +13,19 @@ type (
 	}
 )
 
-func Wrap(val interface{}) *Config {
+func Wrap(val any) *Config {
 	return &Config{
 		Any: jsoniter.Wrap(val),
 	}
 }
 
-func (p *Config) GetConfig(path ...interface{}) cfacade.ProfileJSON {
+func (p *Config) GetConfig(path ...any) cfacade.ProfileJSON {
 	return &Config{
 		Any: p.Any.Get(path...),
 	}
 }
 
-func (p *Config) GetString(path interface{}, defaultVal ...string) string {
+func (p *Config) GetString(path any, defaultVal ...string) string {
 	result := p.Get(path)
 	if result.LastError() != nil {
 		if len(defaultVal) > 0 {
@@ -36,7 +36,7 @@ func (p *Config) GetString(path interface{}, defaultVal ...string) string {
 	return result.ToString()
 }
 
-func (p *Config) GetBool(path interface{}, defaultVal ...bool) bool {
+func (p *Config) GetBool(path any, defaultVal ...bool) bool {
 	result := p.Get(path)
 	if result.LastError() != nil {
 		if len(defaultVal) > 0 {
@@ -49,7 +49,7 @@ func (p *Config) GetBool(path interface{}, defaultVal ...bool) bool {
 	return result.ToBool()
 }
 
-func (p *Config) GetInt(path interface{}, defaultVal ...int) int {
+func (p *Config) GetInt(path any, defaultVal ...int) int {
 	result := p.Get(path)
 	if result.LastError() != nil {
 		if len(defaultVal) > 0 {
@@ -61,7 +61,7 @@ func (p *Config) GetInt(path interface{}, defaultVal ...int) int {
 	return result.ToInt()
 }
 
-func (p *Config) GetInt32(path interface{}, defaultVal ...int32) int32 {
+func (p *Config) GetInt32(path any, defaultVal ...int32) int32 {
 	result := p.Get(path)
 	if result.LastError() != nil {
 		if len(defaultVal) > 0 {
@@ -73,7 +73,7 @@ func (p *Config) GetInt32(path interface{}, defaultVal ...int32) int32 {
 	return result.ToInt32()
 }
 
-func (p *Config) GetInt64(path interface{}, defaultVal ...int64) int64 {
+func (p *Config) GetInt64(path any, defaultVal ...int64) int64 {
 	result := p.Get(path)
 	if result.LastError() != nil {
 		if len(defaultVal) > 0 {
@@ -85,7 +85,7 @@ func (p *Config) GetInt64(path interface{}, defaultVal ...int64) int64 {
 	return result.ToInt64()
 }
 
-func (p *Config) GetDuration(path interface{}, defaultVal ...time.Duration) time.Duration {
+func (p *Config) GetDuration(path any, defaultVal ...time.Duration) time.Duration {
 	result := p.Get(path)
 	if result.LastError() != nil {
 		if len(defaultVal) > 0 {
@@ -97,7 +97,7 @@ func (p *Config) GetDuration(path interface{}, defaultVal ...time.Duration) time
 	return time.Duration(result.ToInt64())
 }
 
-func (p *Config) Unmarshal(value interface{}) error {
+func (p *Config) Unmarshal(value any) error {
 	if p.LastError() != nil {
 		return p.LastError()
 	}

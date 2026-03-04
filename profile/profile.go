@@ -77,15 +77,15 @@ func Init(filePath, nodeID string) (cfacade.INode, error) {
 	return node, nil
 }
 
-func GetConfig(path ...interface{}) cfacade.ProfileJSON {
+func GetConfig(path ...any) cfacade.ProfileJSON {
 	return cfg.jsonConfig.GetConfig(path...)
 }
 
 func LoadFile(filePath, fileName string) (*Config, error) {
 	var (
-		profileMaps = make(map[string]interface{})
-		includeMaps = make(map[string]interface{})
-		rootMaps    = make(map[string]interface{})
+		profileMaps = make(map[string]any)
+		includeMaps = make(map[string]any)
+		rootMaps    = make(map[string]any)
 	)
 
 	// read profile json file
@@ -95,7 +95,7 @@ func LoadFile(filePath, fileName string) (*Config, error) {
 	}
 
 	// read include json file
-	if v, found := profileMaps["include"].([]interface{}); found {
+	if v, found := profileMaps["include"].([]any); found {
 		paths := cstring.ToStringSlice(v)
 		for _, p := range paths {
 			includePath := filepath.Join(filePath, p)
@@ -111,11 +111,11 @@ func LoadFile(filePath, fileName string) (*Config, error) {
 	return Wrap(rootMaps), nil
 }
 
-func mergeMap(dst, src map[string]interface{}) {
+func mergeMap(dst, src map[string]any) {
 	for key, value := range src {
 		if v, ok := dst[key]; ok {
-			if m1, ok := v.(map[string]interface{}); ok {
-				if m2, ok := value.(map[string]interface{}); ok {
+			if m1, ok := v.(map[string]any); ok {
+				if m2, ok := value.(map[string]any); ok {
 					mergeMap(m1, m2)
 				} else {
 					dst[key] = value

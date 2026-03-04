@@ -35,7 +35,7 @@ type (
 
 	pendingMessage struct {
 		mid     uint32
-		payload interface{}
+		payload any
 	}
 
 	OnCloseFunc func(*Agent)
@@ -218,7 +218,7 @@ func (a *Agent) closeProcess() {
 func (a *Agent) write(bytes []byte) {
 	_, err := a.conn.Write(bytes)
 	if err != nil {
-		clog.Warn(err)
+		clog.Warn("%v", err)
 	}
 }
 
@@ -268,14 +268,14 @@ func (a *Agent) processPending(pending *pendingMessage) {
 	// encode packet
 	pkg, err := pack(pending.mid, data)
 	if err != nil {
-		clog.Warn(err)
+		clog.Warn("%v", err)
 		return
 	}
 
 	a.SendRaw(pkg)
 }
 
-func (a *Agent) sendPending(mid uint32, payload interface{}) {
+func (a *Agent) sendPending(mid uint32, payload any) {
 	if a.state == AgentClosed {
 		clog.Warn("[sid = %s,uid = %d] Session is closed. [mid = %d, payload = %+v]",
 			a.SID(),
@@ -304,7 +304,7 @@ func (a *Agent) sendPending(mid uint32, payload interface{}) {
 	a.chPending <- pending
 }
 
-func (a *Agent) Response(mid uint32, v interface{}) {
+func (a *Agent) Response(mid uint32, v any) {
 	a.sendPending(mid, v)
 	if clog.PrintLevel(zapcore.DebugLevel) {
 		clog.Debug("[sid = %s,uid = %d] Response ok. [mid = %d, val = %+v]",
@@ -322,7 +322,7 @@ func (a *Agent) AddOnClose(fn OnCloseFunc) {
 	}
 }
 
-func (a *Agent) Kick(mid uint32, reason interface{}, closed bool) {
+func (a *Agent) Kick(mid uint32, reason any, closed bool) {
 	bytes, err := a.Serializer().Marshal(reason)
 	if err != nil {
 		clog.Warn("[sid = %s,uid = %d] Kick marshal fail. [reason = {%+v}, err = %s]",

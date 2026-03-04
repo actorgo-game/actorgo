@@ -30,7 +30,7 @@ func (p *ActorBase) Push(session *cproto.Session, route string, v any) {
 	PushWithSID(p, session.AgentPath, session.Sid, route, v)
 }
 
-func (p *ActorBase) PushWithUIDS(agentPath string, uidList []int64, allUID bool, route string, v interface{}) {
+func (p *ActorBase) PushWithUIDS(agentPath string, uidList []int64, allUID bool, route string, v any) {
 	PushWithUIDS(p, agentPath, uidList, allUID, route, v)
 }
 

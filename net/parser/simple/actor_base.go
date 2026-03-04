@@ -11,11 +11,11 @@ type ActorBase struct {
 	cactor.Base
 }
 
-func (p *ActorBase) Response(session *cproto.Session, mid uint32, v interface{}) {
+func (p *ActorBase) Response(session *cproto.Session, mid uint32, v any) {
 	Response(p, session, mid, v)
 }
 
-func Response(iActor cfacade.IActor, session *cproto.Session, mid uint32, v interface{}) {
+func Response(iActor cfacade.IActor, session *cproto.Session, mid uint32, v any) {
 	data, err := iActor.App().Serializer().Marshal(v)
 	if err != nil {
 		clog.Warn("[Response] Marshal error. v = %+v", v)

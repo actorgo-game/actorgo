@@ -17,7 +17,7 @@ func (x *Session) ActorPath() string {
 	return x.AgentPath + cconst.DOT + x.Sid
 }
 
-func (x *Session) Add(key string, value interface{}) {
+func (x *Session) Add(key string, value any) {
 	x.Data[key] = cstring.ToString(value)
 }
 

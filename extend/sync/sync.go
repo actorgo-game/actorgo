@@ -9,11 +9,9 @@ type WaitGroup struct {
 
 // Add 添加一个非阻塞的任务，任务在新的 Go 程执行
 func (wg *WaitGroup) Add(fn func()) {
-	wg.wg.Add(1)
-	go func() {
-		defer wg.wg.Done()
+	wg.wg.Go(func() {
 		fn()
-	}()
+	})
 }
 
 // Wait 等待所有任务执行完成

@@ -4,54 +4,42 @@ package cslice
 import (
 	"math/rand"
 	"reflect"
+	"slices"
 	"strings"
-	"time"
 
 	cstring "github.com/actorgo-game/actorgo/extend/string"
 	cutils "github.com/actorgo-game/actorgo/extend/utils"
 )
 
 func Int32In(v int32, sl []int32) (int, bool) {
-	for i, vv := range sl {
-		if vv == v {
-			return i, true
-		}
+	if i := slices.Index(sl, v); i >= 0 {
+		return i, true
 	}
 	return 0, false
 }
 
 func Int64In(v int64, sl []int64) (int, bool) {
-	for i, vv := range sl {
-		if vv == v {
-			return i, true
-		}
+	if i := slices.Index(sl, v); i >= 0 {
+		return i, true
 	}
 	return 0, false
 }
 
 // StringIn checks given string in string slice or not.
 func StringIn(v string, sl []string) (int, bool) {
-	for i, vv := range sl {
-		if vv == v {
-			return i, true
-		}
+	if i := slices.Index(sl, v); i >= 0 {
+		return i, true
 	}
 	return 0, false
 }
 
 func StringInSlice(v string, sl []string) bool {
-	_, ok := StringIn(v, sl)
-	return ok
+	return slices.Contains(sl, v)
 }
 
 // InInterface checks given interface in interface slice.
-func InInterface(v interface{}, sl []interface{}) bool {
-	for _, vv := range sl {
-		if vv == v {
-			return true
-		}
-	}
-	return false
+func InInterface(v any, sl []any) bool {
+	return slices.Contains(sl, v)
 }
 
 // RandList generate an int slice from min to max.
@@ -61,8 +49,6 @@ func RandList(minValue, maxValue int) []int {
 	}
 
 	length := maxValue - minValue + 1
-	t0 := time.Now()
-	rand.Seed(int64(t0.Nanosecond()))
 	list := rand.Perm(length)
 	for index := range list {
 		list[index] += minValue
@@ -71,13 +57,13 @@ func RandList(minValue, maxValue int) []int {
 }
 
 // Merge merges interface slices to one slice.
-func Merge(slice1, slice2 []interface{}) (c []interface{}) {
+func Merge(slice1, slice2 []any) (c []any) {
 	c = append(slice1, slice2...)
 	return
 }
 
 // Reduce generates a new slice after parsing every value by reduce function
-func Reduce(slice []interface{}, a func(interface{}) interface{}) (destSlice []interface{}) {
+func Reduce(slice []any, a func(any) any) (destSlice []any) {
 	for _, v := range slice {
 		destSlice = append(destSlice, a(v))
 	}
@@ -85,7 +71,7 @@ func Reduce(slice []interface{}, a func(interface{}) interface{}) (destSlice []i
 }
 
 // Rand returns random one from slice.
-func Rand(a []interface{}) (b interface{}) {
+func Rand(a []any) (b any) {
 	randNum := rand.Intn(len(a))
 	b = a[randNum]
 	return
@@ -100,7 +86,7 @@ func Sum(intslice []int64) (sum int64) {
 }
 
 // Filter generates a new slice after filter function.
-func Filter(slice []interface{}, a func(interface{}) bool) (filterSlice []interface{}) {
+func Filter(slice []any, a func(any) bool) (filterSlice []any) {
 	for _, v := range slice {
 		if a(v) {
 			filterSlice = append(filterSlice, v)
@@ -110,7 +96,7 @@ func Filter(slice []interface{}, a func(interface{}) bool) (filterSlice []interf
 }
 
 // Diff returns diff slice of slice1 - slice2.
-func Diff(slice1, slice2 []interface{}) (diffSlice []interface{}) {
+func Diff(slice1, slice2 []any) (diffSlice []any) {
 	for _, v := range slice1 {
 		if !InInterface(v, slice2) {
 			diffSlice = append(diffSlice, v)
@@ -120,7 +106,7 @@ func Diff(slice1, slice2 []interface{}) (diffSlice []interface{}) {
 }
 
 // Intersect returns slice that are present in all the slice1 and slice2.
-func Intersect(slice1, slice2 []interface{}) (diffSlice []interface{}) {
+func Intersect(slice1, slice2 []any) (diffSlice []any) {
 	for _, v := range slice1 {
 		if InInterface(v, slice2) {
 			diffSlice = append(diffSlice, v)
@@ -130,7 +116,7 @@ func Intersect(slice1, slice2 []interface{}) (diffSlice []interface{}) {
 }
 
 // Chunk separates one slice to some sized slice.
-func Chunk(slice []interface{}, size int) (chunkSlice [][]interface{}) {
+func Chunk(slice []any, size int) (chunkSlice [][]any) {
 	if size >= len(slice) {
 		chunkSlice = append(chunkSlice, slice)
 		return
@@ -152,7 +138,7 @@ func Range(start, end, step int64) (intSlice []int64) {
 }
 
 // Pad prepends size number of val into slice.
-func Pad(slice []interface{}, size int, val interface{}) []interface{} {
+func Pad(slice []any, size int, val any) []any {
 	if size <= len(slice) {
 		return slice
 	}
@@ -186,8 +172,8 @@ func Unique[T comparable](slice ...T) []T {
 }
 
 // Shuffle shuffles a slice.
-func Shuffle(slice []interface{}) []interface{} {
-	for i := 0; i < len(slice); i++ {
+func Shuffle(slice []any) []any {
+	for range slice {
 		a := rand.Intn(len(slice))
 		b := rand.Intn(len(slice))
 		slice[a], slice[b] = slice[b], slice[a]
@@ -242,10 +228,10 @@ func StringToInt64(strSlice []string) []int64 {
 
 // IsSlice checks whether given value is array/slice.
 // Note that it uses reflect internally implementing this feature.
-func IsSlice(value interface{}) bool {
+func IsSlice(value any) bool {
 	rv := reflect.ValueOf(value)
 	kind := rv.Kind()
-	if kind == reflect.Ptr {
+	if kind == reflect.Pointer {
 		rv = rv.Elem()
 		kind = rv.Kind()
 	}

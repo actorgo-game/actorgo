@@ -14,7 +14,7 @@ import (
 type (
 	Command struct {
 		writeBacklog    int
-		sysData         map[string]interface{}
+		sysData         map[string]any
 		heartbeatTime   time.Duration
 		handshakeBytes  []byte
 		heartbeatBytes  []byte
@@ -35,7 +35,7 @@ const (
 var (
 	cmd = Command{
 		writeBacklog:    64,
-		sysData:         make(map[string]interface{}),
+		sysData:         make(map[string]any),
 		heartbeatTime:   60 * time.Second,
 		handshakeBytes:  make([]byte, 0),
 		heartbeatBytes:  make([]byte, 0),
@@ -56,14 +56,14 @@ func (p *Command) init(app cfacade.IApplication) {
 
 }
 
-func (p *Command) setData(name string, value interface{}) {
+func (p *Command) setData(name string, value any) {
 	if _, found := p.sysData[name]; !found {
 		p.sysData[name] = value
 	}
 }
 
 func (p *Command) setHandshakeBytes() {
-	handshakeData := map[string]interface{}{
+	handshakeData := map[string]any{
 		"code": 200,
 		"sys":  p.sysData,
 	}

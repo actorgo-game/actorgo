@@ -11,7 +11,7 @@ func NewJSON() *JSON {
 }
 
 // Marshal returns the JSON encoding of v.
-func (j *JSON) Marshal(v interface{}) ([]byte, error) {
+func (j *JSON) Marshal(v any) ([]byte, error) {
 	if data, ok := v.([]byte); ok {
 		return data, nil
 	}
@@ -21,7 +21,7 @@ func (j *JSON) Marshal(v interface{}) ([]byte, error) {
 
 // Unmarshal parses the JSON-encoded data and stores the result
 // in the value pointed to by v.
-func (j *JSON) Unmarshal(data []byte, v interface{}) error {
+func (j *JSON) Unmarshal(data []byte, v any) error {
 	return jsoniter.Unmarshal(data, v)
 }
 

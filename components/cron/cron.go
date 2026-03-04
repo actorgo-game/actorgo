@@ -16,11 +16,11 @@ var _cron = cron.New(
 type CronLogger struct {
 }
 
-func (CronLogger) Info(msg string, keysAndValues ...interface{}) {
+func (CronLogger) Info(msg string, keysAndValues ...any) {
 	clog.Infow(msg, keysAndValues...)
 }
 
-func (CronLogger) Error(err error, _ string, _ ...interface{}) {
+func (CronLogger) Error(err error, _ string, _ ...any) {
 	clog.Error(err.Error())
 }
 

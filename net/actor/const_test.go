@@ -69,7 +69,7 @@ func TestActorIDValidate(t *testing.T) {
 func TestUint32(t *testing.T) {
 	var id uint32 = 4294967290
 
-	for i := 0; i < 20; i++ {
+	for range 20 {
 		atomic.AddUint32(&id, 1)
 		fmt.Println(id)
 	}

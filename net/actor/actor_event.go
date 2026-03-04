@@ -1,6 +1,9 @@
 package cactor
 
 import (
+	"maps"
+	"slices"
+
 	cfacade "github.com/actorgo-game/actorgo/facade"
 	clog "github.com/actorgo-game/actorgo/logger"
 )
@@ -99,9 +102,5 @@ func (p *actorEvent) onStop() {
 }
 
 func (p *actorEvent) EventNames() []string {
-	var names []string
-	for eventName := range p.funcMap {
-		names = append(names, eventName)
-	}
-	return names
+	return slices.Collect(maps.Keys(p.funcMap))
 }

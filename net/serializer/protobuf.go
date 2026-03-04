@@ -14,7 +14,7 @@ func NewProtobuf() *Protobuf {
 }
 
 // Marshal returns the protobuf encoding of v.
-func (p *Protobuf) Marshal(v interface{}) ([]byte, error) {
+func (p *Protobuf) Marshal(v any) ([]byte, error) {
 	if data, ok := v.([]byte); ok {
 		return data, nil
 	}
@@ -28,7 +28,7 @@ func (p *Protobuf) Marshal(v interface{}) ([]byte, error) {
 
 // Unmarshal parses the protobuf-encoded data and stores the result
 // in the value pointed to by v.
-func (p *Protobuf) Unmarshal(data []byte, v interface{}) error {
+func (p *Protobuf) Unmarshal(data []byte, v any) error {
 	pb, ok := v.(proto.Message)
 	if !ok {
 		return cerr.ProtobufWrongValueType

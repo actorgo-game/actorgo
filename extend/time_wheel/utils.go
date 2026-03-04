@@ -31,11 +31,9 @@ type waitGroupWrapper struct {
 }
 
 func (w *waitGroupWrapper) Wrap(cb func()) {
-	w.Add(1)
-	go func() {
+	w.Go(func() {
 		cb()
-		w.Done()
-	}()
+	})
 }
 
 var _nextID uint64

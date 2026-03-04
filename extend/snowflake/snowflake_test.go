@@ -17,7 +17,7 @@ func TestPrintID(t *testing.T) {
 		return
 	}
 
-	for i := 0; i < 10000; i++ {
+	for range 10000 {
 		id := node.Generate()
 		fmt.Println(id.Int64(), id.Base58())
 	}
@@ -47,7 +47,7 @@ func TestGenerateDuplicateID(t *testing.T) {
 	node, _ := NewNode(1)
 
 	var x, y ID
-	for i := 0; i < 1000000; i++ {
+	for range 1000000 {
 		y = node.Generate()
 		if x == y {
 			t.Errorf("x(%d) & y(%d) are the same", x, y)
@@ -62,12 +62,12 @@ func TestRace(t *testing.T) {
 	node, _ := NewNode(1)
 
 	go func() {
-		for i := 0; i < 1000000000; i++ {
+		for range 1000000000 {
 			NewNode(1)
 		}
 	}()
 
-	for i := 0; i < 4000; i++ {
+	for range 4000 {
 
 		node.Generate()
 	}
@@ -87,7 +87,7 @@ func TestAtomicInt64(t *testing.T) {
 
 	//1100 0000 0001 1100 0110 1111 0010 110
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		newID := atomic.AddInt64(&atomicID, 1)
 		t.Logf("newid : %#v", newID)
 	}
@@ -211,7 +211,7 @@ func TestBase32(t *testing.T) {
 		t.Fatalf("error creating NewNode, %s", err)
 	}
 
-	for i := 0; i < 100; i++ {
+	for range 100 {
 
 		sf := node.Generate()
 		b32i := sf.Base32()
@@ -262,7 +262,7 @@ func TestBase58(t *testing.T) {
 		t.Fatalf("error creating NewNode, %s", err)
 	}
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 
 		sf := node.Generate()
 		b58 := sf.Base58()
@@ -412,7 +412,7 @@ func TestUnmarshalJSON(t *testing.T) {
 func TestDefaultNode(t *testing.T) {
 	InitDefaultNode("0")
 
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		fmt.Println(NextID())
 	}
 }

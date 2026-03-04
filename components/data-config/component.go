@@ -94,7 +94,7 @@ func (d *Component) Init() {
 }
 
 func (d *Component) onLoadConfig(cfg IConfig, data []byte, reload bool) {
-	var parseObject interface{}
+	var parseObject any
 	err := d.parser.Unmarshal(data, &parseObject)
 	if err != nil {
 		clog.Warn("[config = %s] unmarshal error = %v", err, cfg.Name())

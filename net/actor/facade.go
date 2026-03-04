@@ -25,7 +25,7 @@ type (
 
 type (
 	IMailBox interface {
-		Register(funcName string, fn interface{}) // 注册执行函数
+		Register(funcName string, fn any) // 注册执行函数
 		GetFuncInfo(funcName string) (*creflect.FuncInfo, bool)
 	}
 )

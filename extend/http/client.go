@@ -71,7 +71,7 @@ func POST(httpURL string, values map[string]string) ([]byte, *http.Response, err
 	return bodyBytes, rsp, nil
 }
 
-func PostJSON(httpURL string, values interface{}) ([]byte, *http.Response, error) {
+func PostJSON(httpURL string, values any) ([]byte, *http.Response, error) {
 	client := http.Client{Timeout: DefaultTimeout}
 
 	jsonBytes, err := json.Marshal(values)

@@ -107,9 +107,9 @@ func GetStackDir() []string {
 
 	var buf [2 << 16]byte
 	stack := string(buf[:runtime.Stack(buf[:], true)])
-	lines := strings.Split(strings.TrimSpace(stack), "\n")
+	lines := strings.SplitSeq(strings.TrimSpace(stack), "\n")
 
-	for _, line := range lines {
+	for line := range lines {
 		lastLine := strings.TrimSpace(line)
 		lastIndex := strings.LastIndex(lastLine, "/")
 		if lastIndex < 1 {

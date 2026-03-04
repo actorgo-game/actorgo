@@ -20,7 +20,7 @@ func TestPB(t *testing.T) {
 		return
 	}
 
-	rsp1Type := reflect.TypeOf(rsp)
+	rsp1Type := reflect.TypeFor[*cproto.Response]()
 
 	x, err := Decode(gobBytes, []reflect.Type{rsp1Type})
 	fmt.Println(x, err)
@@ -53,7 +53,7 @@ func TestCallFunc(t *testing.T) {
 		fmt.Println("ok!!!!!!!", a, b, c)
 	}
 
-	paramsType := reflect.TypeOf(fn)
+	paramsType := reflect.TypeFor[func(a int, b int, c *T1)]()
 	paramsValue := reflect.ValueOf(fn)
 
 	decodeValue, err := DecodeFunc(gobBytes, paramsType)

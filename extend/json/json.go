@@ -6,7 +6,7 @@ import (
 	jsoniter "github.com/json-iterator/go"
 )
 
-func ToJson(i interface{}) string {
+func ToJson(i any) string {
 	if i == nil {
 		return ""
 	}
@@ -19,7 +19,7 @@ func ToJson(i interface{}) string {
 	return string(bytes)
 }
 
-func ReadMaps(path string, maps map[string]interface{}) error {
+func ReadMaps(path string, maps map[string]any) error {
 	bytes, err := os.ReadFile(path)
 	if err != nil {
 		return err

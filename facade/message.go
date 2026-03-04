@@ -13,18 +13,18 @@ import (
 
 type (
 	Message struct {
-		BuildTime  int64            // message build time(ms)
-		PostTime   int64            // post to actor time(ms)
-		Source     string           // 来源actor path
-		Target     string           // 目标actor path
-		targetPath *ActorPath       // 目标actor path对象
-		FuncName   string           // 请求调用的函数名
-		Session    *cproto.Session  // session of gateway
-		Args       interface{}      // 请求的参数
-		Header     nats.Header      // nats.Msg Header
-		Reply      string           // nats.Msg reply subject
-		IsCluster  bool             // 是否为集群消息
-		ChanResult chan interface{} //
+		BuildTime  int64           // message build time(ms)
+		PostTime   int64           // post to actor time(ms)
+		Source     string          // 来源actor path
+		Target     string          // 目标actor path
+		targetPath *ActorPath      // 目标actor path对象
+		FuncName   string          // 请求调用的函数名
+		Session    *cproto.Session // session of gateway
+		Args       any             // 请求的参数
+		Header     nats.Header     // nats.Msg Header
+		Reply      string          // nats.Msg reply subject
+		IsCluster  bool            // 是否为集群消息
+		ChanResult chan any        //
 	}
 
 	// ActorPath = NodeID . ActorID
@@ -122,14 +122,14 @@ func NewActorPath(nodeID, actorID, childID string) *ActorPath {
 	}
 }
 
-func NewChildPath(nodeID, actorID, childID interface{}) string {
+func NewChildPath(nodeID, actorID, childID any) string {
 	if childID == "" {
 		return NewPath(nodeID, actorID)
 	}
 	return cstring.ToString(nodeID) + cconst.DOT + cstring.ToString(actorID) + cconst.DOT + cstring.ToString(childID)
 }
 
-func NewPath(nodeID, actorID interface{}) string {
+func NewPath(nodeID, actorID any) string {
 	return cstring.ToString(nodeID) + cconst.DOT + cstring.ToString(actorID)
 }
 

@@ -51,20 +51,11 @@ func New(p string, options ...Option) (*RotateLogs, error) {
 		case optkeyLinkName:
 			linkName = o.Value().(string)
 		case optkeyMaxAge:
-			maxAge = o.Value().(time.Duration)
-			if maxAge < 0 {
-				maxAge = 0
-			}
+			maxAge = max(o.Value().(time.Duration), 0)
 		case optkeyRotationTime:
-			rotationTime = o.Value().(time.Duration)
-			if rotationTime < 0 {
-				rotationTime = 0
-			}
+			rotationTime = max(o.Value().(time.Duration), 0)
 		case optkeyRotationSize:
-			rotationSize = o.Value().(int64)
-			if rotationSize < 0 {
-				rotationSize = 0
-			}
+			rotationSize = max(o.Value().(int64), 0)
 		case optkeyRotationCount:
 			rotationCount = o.Value().(uint)
 		case optkeyHandler:

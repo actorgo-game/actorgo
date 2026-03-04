@@ -11,8 +11,8 @@ type (
 
 	// IDataParser 数据格式解析接口
 	IDataParser interface {
-		TypeName() string                           // 注册名称
-		Unmarshal(text []byte, v interface{}) error // 文件格式解析器
+		TypeName() string                   // 注册名称
+		Unmarshal(text []byte, v any) error // 文件格式解析器
 	}
 
 	// IDataSource 配置文件数据源
@@ -29,9 +29,9 @@ type (
 
 	// IConfig 配置接口
 	IConfig interface {
-		Name() string                                      // 配置名称
-		Init()                                             // 结构体初始化
-		OnLoad(maps interface{}, reload bool) (int, error) // 配置序列化后，执行该函数 (size,error)
-		OnAfterLoad(reload bool)                           // 所有配置加载后再执行该函数
+		Name() string                              // 配置名称
+		Init()                                     // 结构体初始化
+		OnLoad(maps any, reload bool) (int, error) // 配置序列化后，执行该函数 (size,error)
+		OnAfterLoad(reload bool)                   // 所有配置加载后再执行该函数
 	}
 )

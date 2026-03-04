@@ -144,7 +144,7 @@ func retValue(serializer cfacade.ISerializer, rets []reflect.Value) *cproto.Resp
 			data, err := serializer.Marshal(rets[0].Interface())
 			if err != nil {
 				rsp.Code = ccode.RPCRemoteExecuteError
-				clog.Warn(err)
+				clog.Warn("%v", err)
 			} else {
 				rsp.Data = data
 			}
@@ -169,7 +169,7 @@ func retResponse(m *cfacade.Message, rsp *cproto.Response) {
 	rspMsg.Data = rspData
 
 	if err := cnats.GetConnect().PublishMsg(rspMsg); err != nil {
-		clog.Warn(err)
+		clog.Warn("%v", err)
 	}
 
 	cnats.ReleaseMsg(rspMsg)

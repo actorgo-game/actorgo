@@ -43,18 +43,18 @@ func (*Base) OnFindChild(_ *cfacade.Message) (cfacade.IActor, bool) {
 	return nil, false
 }
 
-func (p *Base) NewPath(nodeID, actorID interface{}) string {
+func (p *Base) NewPath(nodeID, actorID any) string {
 	return cfacade.NewPath(nodeID, actorID)
 }
 
-func (p *Base) NewNodePath(actorID interface{}) string {
+func (p *Base) NewNodePath(actorID any) string {
 	return cfacade.NewPath(p.path.NodeID, actorID)
 }
 
-func (p *Base) NewChildPath(actorID, childID interface{}) string {
+func (p *Base) NewChildPath(actorID, childID any) string {
 	return cfacade.NewChildPath(p.path.NodeID, actorID, childID)
 }
 
-func (p *Base) NewMyChildPath(childID interface{}) string {
+func (p *Base) NewMyChildPath(childID any) string {
 	return cfacade.NewChildPath(p.path.NodeID, p.path.ActorID, childID)
 }

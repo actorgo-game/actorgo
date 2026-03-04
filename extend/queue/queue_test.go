@@ -12,11 +12,11 @@ func TestQueue(t *testing.T) {
 	num := 3
 
 	q := NewQueue()
-	for i := 0; i < num; i++ {
+	for i := range num {
 		q.Push(i)
 	}
 
-	for i := 0; i < num; i++ {
+	for range num {
 		fmt.Println(q.Pop())
 	}
 
@@ -24,7 +24,7 @@ func TestQueue(t *testing.T) {
 
 func BenchmarkNewFIFOQueue(b *testing.B) {
 	q := NewQueue()
-	for i := 0; i < 1000000; i++ {
+	for i := range 1000000 {
 		q.Push(i)
 	}
 
@@ -40,7 +40,7 @@ func TestQueuePop(t *testing.T) {
 	num := 10
 
 	q := NewQueue()
-	for i := 0; i < num; i++ {
+	for i := range num {
 		q.Push(i)
 	}
 
@@ -58,7 +58,7 @@ func TestQueuePop(t *testing.T) {
 		for {
 			<-postTicker.C
 
-			for i := 0; i < postNum; i++ {
+			for range postNum {
 				v := q.Pop()
 				if v == nil {
 					break

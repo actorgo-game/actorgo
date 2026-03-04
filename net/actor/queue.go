@@ -14,7 +14,7 @@ type (
 
 	queueNode struct {
 		next *queueNode
-		val  interface{}
+		val  any
 	}
 )
 
@@ -29,7 +29,7 @@ func newQueue() queue {
 	return q
 }
 
-func (p *queue) Push(v interface{}) {
+func (p *queue) Push(v any) {
 	if v == nil {
 		return
 	}
@@ -45,7 +45,7 @@ func (p *queue) Push(v interface{}) {
 	p._setCount(1)
 }
 
-func (p *queue) Pop() interface{} {
+func (p *queue) Pop() any {
 	tail := p.tail
 	next := (*queueNode)(atomic.LoadPointer((*unsafe.Pointer)(unsafe.Pointer(&tail.next)))) // acquire
 	if next != nil {

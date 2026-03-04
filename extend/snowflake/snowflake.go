@@ -63,19 +63,19 @@ var ErrInvalidBase32 = errors.New("invalid base32")
 // Create maps for decoding Base58/Base32.
 // This speeds up the process tremendously.
 func init() {
-	for i := 0; i < len(encodeBase58Map); i++ {
+	for i := range len(encodeBase58Map) {
 		decodeBase58Map[i] = 0xFF
 	}
 
-	for i := 0; i < len(encodeBase58Map); i++ {
+	for i := range len(encodeBase58Map) {
 		decodeBase58Map[encodeBase58Map[i]] = byte(i)
 	}
 
-	for i := 0; i < len(encodeBase32Map); i++ {
+	for i := range len(encodeBase32Map) {
 		decodeBase32Map[i] = 0xFF
 	}
 
-	for i := 0; i < len(encodeBase32Map); i++ {
+	for i := range len(encodeBase32Map) {
 		decodeBase32Map[encodeBase32Map[i]] = byte(i)
 	}
 }

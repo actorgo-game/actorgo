@@ -284,9 +284,9 @@ func (p *System) CallWait(source, target, funcName string, arg, reply any) int32
 		message.Target = target
 		message.FuncName = funcName
 		message.Args = arg
-		message.ChanResult = make(chan interface{})
+		message.ChanResult = make(chan any)
 
-		var result interface{}
+		var result any
 
 		if sourcePath.ActorID == targetPath.ActorID {
 			if sourcePath.ChildID == targetPath.ChildID {
@@ -309,6 +309,9 @@ func (p *System) CallWait(source, target, funcName string, arg, reply any) int32
 				return ccode.ActorCallFail
 			}
 		}
+
+		timer := time.NewTimer(p.callTimeout)
+		defer timer.Stop()
 
 		select {
 		case result = <-message.ChanResult:
@@ -358,7 +361,7 @@ func (p *System) CallWait(source, target, funcName string, arg, reply any) int32
 					}
 				}
 			}
-		case <-time.After(p.callTimeout):
+		case <-timer.C:
 			return ccode.ActorCallTimeout
 		}
 	}

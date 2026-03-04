@@ -8,7 +8,7 @@ import (
 	cstring "github.com/actorgo-game/actorgo/extend/string"
 )
 
-func ReflectTry(f reflect.Value, args []reflect.Value, handler func(interface{})) {
+func ReflectTry(f reflect.Value, args []reflect.Value, handler func(any)) {
 	defer func() {
 		if err := recover(); err != nil {
 			fmt.Println("-------------panic recover---------------")
@@ -20,11 +20,11 @@ func ReflectTry(f reflect.Value, args []reflect.Value, handler func(interface{})
 	f.Call(args)
 }
 
-func GetStructName(v interface{}) string {
+func GetStructName(v any) string {
 	return reflect.Indirect(reflect.ValueOf(v)).Type().Name()
 }
 
-func GetFuncName(fn interface{}) string {
+func GetFuncName(fn any) string {
 	if reflect.TypeOf(fn).Kind() != reflect.Func {
 		panic(fmt.Sprintf("[fn = %v] is not func type.", fn))
 	}
@@ -72,18 +72,18 @@ func GetFuncName(fn interface{}) string {
 //	return invoke, nil
 //}
 
-func IsPtr(val interface{}) bool {
+func IsPtr(val any) bool {
 	if val == nil {
 		return false
 	}
 
-	return reflect.TypeOf(val).Kind() == reflect.Ptr
+	return reflect.TypeOf(val).Kind() == reflect.Pointer
 }
 
-func IsNotPtr(val interface{}) bool {
+func IsNotPtr(val any) bool {
 	if val == nil {
 		return false
 	}
 
-	return reflect.TypeOf(val).Kind() != reflect.Ptr
+	return reflect.TypeOf(val).Kind() != reflect.Pointer
 }

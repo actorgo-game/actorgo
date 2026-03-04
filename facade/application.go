@@ -38,13 +38,13 @@ type (
 	// ProfileJSON profile配置文件读取接口
 	ProfileJSON interface {
 		jsoniter.Any
-		GetConfig(path ...interface{}) ProfileJSON
-		GetString(path interface{}, defaultVal ...string) string
-		GetBool(path interface{}, defaultVal ...bool) bool
-		GetInt(path interface{}, defaultVal ...int) int
-		GetInt32(path interface{}, defaultVal ...int32) int32
-		GetInt64(path interface{}, defaultVal ...int64) int64
-		GetDuration(path interface{}, defaultVal ...time.Duration) time.Duration
-		Unmarshal(ptrVal interface{}) error
+		GetConfig(path ...any) ProfileJSON
+		GetString(path any, defaultVal ...string) string
+		GetBool(path any, defaultVal ...bool) bool
+		GetInt(path any, defaultVal ...int) int
+		GetInt32(path any, defaultVal ...int32) int32
+		GetInt64(path any, defaultVal ...int64) int64
+		GetDuration(path any, defaultVal ...time.Duration) time.Duration
+		Unmarshal(ptrVal any) error
 	}
 )

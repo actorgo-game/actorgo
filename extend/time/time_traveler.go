@@ -72,10 +72,7 @@ func (c *ActorGoTime) AddYearsNoOverflow(years int) {
 	// 获取N年后本月的最后一天
 	last := time.Date(c.Year()+years, c.Time.Month(), 1, c.Hour(), c.Minute(), c.Second(), c.Nanosecond(), c.Location()).AddDate(0, 1, -1)
 
-	day := c.Day()
-	if c.Day() > last.Day() {
-		day = last.Day()
-	}
+	day := min(c.Day(), last.Day())
 
 	c.Time = time.Date(last.Year(), last.Month(), day, c.Hour(), c.Minute(), c.Second(), c.Nanosecond(), c.Location())
 }
@@ -162,10 +159,7 @@ func (c *ActorGoTime) AddMonthsNoOverflow(months int) {
 	// 获取N月后的最后一天
 	last := time.Date(c.Year(), month, 1, c.Hour(), c.Minute(), c.Second(), c.Nanosecond(), c.Location()).AddDate(0, 1, -1)
 
-	day := c.Day()
-	if c.Day() > last.Day() {
-		day = last.Day()
-	}
+	day := min(c.Day(), last.Day())
 
 	c.Time = time.Date(last.Year(), last.Month(), day, c.Hour(), c.Minute(), c.Second(), c.Nanosecond(), c.Location())
 }

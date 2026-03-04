@@ -8,7 +8,7 @@ import (
 
 var (
 	_msgPool = &sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			return &nats.Msg{}
 		},
 	}

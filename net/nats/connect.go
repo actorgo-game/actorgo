@@ -178,13 +178,16 @@ func (p *Connect) RequestSync(subject string, data []byte, tod ...time.Duration)
 		return nil, err
 	}
 
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
 	select {
 	case resp, ok := <-ch:
 		if !ok || resp == nil {
 			return nil, cerror.ClusterRequestTimeout
 		}
 		return resp.Data, nil
-	case <-time.After(timeout):
+	case <-timer.C:
 		p.waiters.Delete(reqID)
 		clog.Warn("id = %d, reqID = %s", p.id, reqID)
 		close(ch)

@@ -120,7 +120,7 @@ func (*Actor) SetHeartbeat(t time.Duration) {
 	cmd.heartbeatTime = t
 }
 
-func (*Actor) SetSysData(key string, value interface{}) {
+func (*Actor) SetSysData(key string, value any) {
 	cmd.sysData[key] = value
 }
 

@@ -97,7 +97,7 @@ func ToInt64D(value string, def ...int64) int64 {
 	return val
 }
 
-func ToString(value interface{}) string {
+func ToString(value any) string {
 	ret := ""
 
 	if value == nil {
@@ -127,7 +127,7 @@ func ToString(value interface{}) string {
 	return ret
 }
 
-func ToStringSlice(val []interface{}) []string {
+func ToStringSlice(val []any) []string {
 	var result []string
 	for _, item := range val {
 		v, ok := item.(string)

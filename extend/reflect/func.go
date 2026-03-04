@@ -19,7 +19,7 @@ type FuncInfo struct {
 	OutArgsLen int
 }
 
-func GetFuncInfo(fn interface{}) (FuncInfo, error) {
+func GetFuncInfo(fn any) (FuncInfo, error) {
 	if fn == nil {
 		return nilFuncInfo, cerr.FuncIsNil
 	}
@@ -31,14 +31,12 @@ func GetFuncInfo(fn interface{}) (FuncInfo, error) {
 	}
 
 	var inArgs []reflect.Type
-	for i := 0; i < typ.NumIn(); i++ {
-		t := typ.In(i)
+	for t := range typ.Ins() {
 		inArgs = append(inArgs, t)
 	}
 
 	var outArgs []reflect.Type
-	for i := 0; i < typ.NumOut(); i++ {
-		t := typ.Out(i)
+	for t := range typ.Outs() {
 		outArgs = append(outArgs, t)
 	}
 

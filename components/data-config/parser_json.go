@@ -11,6 +11,6 @@ func (j *ParserJson) TypeName() string {
 	return "json"
 }
 
-func (j *ParserJson) Unmarshal(data []byte, v interface{}) error {
+func (j *ParserJson) Unmarshal(data []byte, v any) error {
 	return jsoniter.Unmarshal(data, v)
 }

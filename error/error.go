@@ -9,7 +9,7 @@ func Error(text string) error {
 	return errors.New(text)
 }
 
-func Errorf(format string, a ...interface{}) error {
+func Errorf(format string, a ...any) error {
 	return Error(fmt.Sprintf(format, a...))
 }
 
@@ -17,7 +17,7 @@ func Wrap(err error, text string) error {
 	return Errorf("err:%v, text:%s", err, text)
 }
 
-func Wrapf(err error, format string, a ...interface{}) error {
+func Wrapf(err error, format string, a ...any) error {
 	text := fmt.Sprintf(format, a...)
 	return Wrap(err, text)
 }

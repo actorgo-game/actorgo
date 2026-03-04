@@ -188,7 +188,7 @@ func (g *Context) PostFormInt64Array(name string) []int64 {
 	return cslice.StringToInt64(array)
 }
 
-func (g *Context) HTML200(name string, obj ...interface{}) {
+func (g *Context) HTML200(name string, obj ...any) {
 	if len(obj) > 0 {
 		g.HTML(http.StatusOK, name, obj[0])
 	} else {
@@ -196,11 +196,11 @@ func (g *Context) HTML200(name string, obj ...interface{}) {
 	}
 }
 
-func (g *Context) JSON200(obj interface{}) {
+func (g *Context) JSON200(obj any) {
 	g.JSON(http.StatusOK, obj)
 }
 
-func (g *Context) RenderJSON(value interface{}) {
+func (g *Context) RenderJSON(value any) {
 	g.Context.JSON(http.StatusOK, value)
 }
 

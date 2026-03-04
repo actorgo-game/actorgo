@@ -6,7 +6,7 @@ import (
 )
 
 func TestNUID(t *testing.T) {
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		fmt.Println(id.Next())
 	}
 }

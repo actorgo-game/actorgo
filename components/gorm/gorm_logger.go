@@ -10,6 +10,6 @@ type gormLogger struct {
 	log *clog.ActorLogger
 }
 
-func (l gormLogger) Printf(s string, i ...interface{}) {
+func (l gormLogger) Printf(s string, i ...any) {
 	l.log.Debugf(strings.ReplaceAll(s, "\n", ""), i...)
 }

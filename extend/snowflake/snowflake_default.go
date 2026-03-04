@@ -27,7 +27,7 @@ func SetDefaultNode(nodeValue int64) {
 	var err error
 	defaultNode, err = NewNode(nodeValue)
 	if err != nil {
-		clog.Warn(err)
+		clog.Warn("%v", err)
 		clog.Warn("create default snowflake node fail. nodeValue = %d", nodeValue)
 	}
 

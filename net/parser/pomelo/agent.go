@@ -41,7 +41,7 @@ type (
 		typ     pomeloMessage.Type // message type
 		route   string             // message route(push)
 		mid     uint               // response message id(response)
-		payload interface{}        // payload
+		payload any                // payload
 		err     bool               // if it's an error
 	}
 
@@ -120,7 +120,7 @@ func (a *Agent) SendRaw(bytes []byte) {
 func (a *Agent) SendPacket(typ pomeloPacket.Type, data []byte) {
 	pkg, err := pomeloPacket.Encode(typ, data)
 	if err != nil {
-		clog.Warn(err)
+		clog.Warn("%v", err)
 		return
 	}
 	a.SendRaw(pkg)
@@ -247,7 +247,7 @@ func (a *Agent) closeProcess() {
 func (a *Agent) write(bytes []byte) {
 	_, err := a.conn.Write(bytes)
 	if err != nil {
-		clog.Warn(err)
+		clog.Warn("%v", err)
 	}
 }
 
@@ -305,7 +305,7 @@ func (a *Agent) processPending(data *pendingMessage) {
 	// encode message
 	em, err := pomeloMessage.Encode(m)
 	if err != nil {
-		clog.Warn(err)
+		clog.Warn("%v", err)
 		return
 	}
 
@@ -313,7 +313,7 @@ func (a *Agent) processPending(data *pendingMessage) {
 	a.SendPacket(pomeloPacket.Data, em)
 }
 
-func (a *Agent) sendPending(typ pomeloMessage.Type, route string, mid uint32, v interface{}, isError bool) {
+func (a *Agent) sendPending(typ pomeloMessage.Type, route string, mid uint32, v any, isError bool) {
 	if a.state == AgentClosed {
 		clog.Warn("[sid = %s,uid = %d] Session is closed. [typ = %v, route = %s, mid = %d, val = %+v, err = %v]",
 			a.SID(),
@@ -351,7 +351,7 @@ func (a *Agent) sendPending(typ pomeloMessage.Type, route string, mid uint32, v 
 	a.chPending <- pending
 }
 
-func (a *Agent) Response(session *cproto.Session, v interface{}, isError ...bool) {
+func (a *Agent) Response(session *cproto.Session, v any, isError ...bool) {
 	a.ResponseMID(session.GetMID(), v, isError...)
 }
 
@@ -362,7 +362,7 @@ func (a *Agent) ResponseCode(session *cproto.Session, statusCode int32, isError 
 	a.ResponseMID(session.GetMID(), rsp, isError...)
 }
 
-func (a *Agent) ResponseMID(mid uint32, v interface{}, isError ...bool) {
+func (a *Agent) ResponseMID(mid uint32, v any, isError ...bool) {
 	isErr := false
 	if len(isError) > 0 {
 		isErr = isError[0]
@@ -379,7 +379,7 @@ func (a *Agent) ResponseMID(mid uint32, v interface{}, isError ...bool) {
 	}
 }
 
-func (a *Agent) Push(route string, val interface{}) {
+func (a *Agent) Push(route string, val any) {
 	a.sendPending(pomeloMessage.Push, route, 0, val, false)
 
 	if clog.PrintLevel(zapcore.DebugLevel) {
@@ -391,7 +391,7 @@ func (a *Agent) Push(route string, val interface{}) {
 	}
 }
 
-func (a *Agent) Kick(reason interface{}, closed bool) {
+func (a *Agent) Kick(reason any, closed bool) {
 	bytes, err := a.Serializer().Marshal(reason)
 	if err != nil {
 		clog.Warn("[sid = %s,uid = %d] Kick marshal fail. [reason = {%+v}, err = %s]",

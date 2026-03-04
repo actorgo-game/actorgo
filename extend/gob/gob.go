@@ -9,7 +9,7 @@ import (
 
 var (
 	bufferPool = sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			return new(bytes.Buffer)
 		},
 	}
@@ -62,7 +62,7 @@ func DecodeFunc(data []byte, paramsType reflect.Type) ([]reflect.Value, error) {
 	defer putBuffer(buffer)
 
 	valueList := make([]reflect.Value, paramsLen)
-	for i := 0; i < paramsLen; i++ {
+	for i := range paramsLen {
 		params := reflect.New(paramsType.In(i))
 		err := decoder.DecodeValue(params)
 		if err != nil {
@@ -75,7 +75,7 @@ func DecodeFunc(data []byte, paramsType reflect.Type) ([]reflect.Value, error) {
 	return valueList, nil
 }
 
-func Encode(values ...interface{}) ([]byte, error) {
+func Encode(values ...any) ([]byte, error) {
 	buffer := getBuffer(nil)
 	encoder := gob.NewEncoder(buffer)
 

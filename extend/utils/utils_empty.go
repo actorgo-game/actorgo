@@ -6,7 +6,7 @@ import "reflect"
 // IsEmpty checks whether given <value> empty.
 // It returns true if <value> is in: 0, nil, false, "", len(slice/map/chan) == 0,
 // or else it returns false.
-func IsEmpty(value interface{}) bool {
+func IsEmpty(value any) bool {
 	if value == nil {
 		return true
 	}
@@ -53,7 +53,7 @@ func IsEmpty(value interface{}) bool {
 		return len(val) == 0
 	case []float64:
 		return len(val) == 0
-	case map[string]interface{}:
+	case map[string]any:
 		return len(val) == 0
 	default:
 		// Finally using reflect.
@@ -86,8 +86,8 @@ func IsEmpty(value interface{}) bool {
 		case reflect.String:
 			return rv.Len() == 0
 		case reflect.Struct:
-			for i := 0; i < rv.NumField(); i++ {
-				if !IsEmpty(rv) {
+			for _, field := range rv.Fields() {
+				if !IsEmpty(field) {
 					return false
 				}
 			}
@@ -98,7 +98,7 @@ func IsEmpty(value interface{}) bool {
 			reflect.Array:
 			return rv.Len() == 0
 		case reflect.Func,
-			reflect.Ptr,
+			reflect.Pointer,
 			reflect.Interface,
 			reflect.UnsafePointer:
 			if rv.IsNil() {
@@ -114,7 +114,7 @@ func IsEmpty(value interface{}) bool {
 // of a pinter that also points to a pointer. It returns nil if the source is nil when <traceSource>
 // is true.
 // Note that it might use reflect feature which affects performance a little bit.
-func IsNil(value interface{}, traceSource ...bool) bool {
+func IsNil(value any, traceSource ...bool) bool {
 	if value == nil {
 		return true
 	}
@@ -133,15 +133,15 @@ func IsNil(value interface{}, traceSource ...bool) bool {
 		reflect.UnsafePointer:
 		return !rv.IsValid() || rv.IsNil()
 
-	case reflect.Ptr:
+	case reflect.Pointer:
 		if len(traceSource) > 0 && traceSource[0] {
-			for rv.Kind() == reflect.Ptr {
+			for rv.Kind() == reflect.Pointer {
 				rv = rv.Elem()
 			}
 			if !rv.IsValid() {
 				return true
 			}
-			if rv.Kind() == reflect.Ptr {
+			if rv.Kind() == reflect.Pointer {
 				return rv.IsNil()
 			}
 		} else {
