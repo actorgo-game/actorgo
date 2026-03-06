@@ -202,7 +202,7 @@ func (p *System) Call(source, target, funcName string, arg any) int32 {
 		remoteMsg.FuncName = funcName
 		remoteMsg.Args = arg
 
-		if !p.PostRemote(&remoteMsg) {
+		if !p.PostRemote(remoteMsg) {
 			clog.Warn("[Call] Post remote fail. [source = %s, target = %s, funcName = %s]", source, target, funcName)
 			return ccode.ActorCallFail
 		}
@@ -298,9 +298,9 @@ func (p *System) CallWait(source, target, funcName string, arg, reply any) int32
 				return ccode.ActorChildIDNotFound
 			}
 
-			childActor.PostRemote(&message)
+			childActor.PostRemote(message)
 		} else {
-			if !p.PostRemote(&message) {
+			if !p.PostRemote(message) {
 				clog.Warn("[CallWait] Post remote fail. [source = %s, target = %s, funcName = %s]",
 					source,
 					target,
