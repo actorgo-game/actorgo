@@ -5,7 +5,7 @@ import (
 )
 
 const (
-	version = "1.0.0"
+	version = "1.0.5"
 )
 
 var logo = `game sever framework @v%s
