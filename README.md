@@ -5,7 +5,7 @@
 ![go version](https://img.shields.io/github/go-mod/go-version/actorgo-game/actorgo)
 ![actorgo tag](https://img.shields.io/github/v/tag/actorgo-game/actorgo)
 
-- 本框架Fork于cherry框架，https://cherry-game.github.io/. (意图基于此高效的生产更多的特效和优化)
+- 本框架Fork于cherry框架，https://cherry-game.github.io/. (基于此，高效的添加更多特性和优化)
 - **高性能分布式的 Golang 游戏服务器框架**
 - 采用 Golang + Actor Model 构建，具备高性能、可伸缩等特性
 - 简单易学，让开发者更专注于游戏业务开发
