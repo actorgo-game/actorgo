@@ -3,6 +3,7 @@ package cmongo
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"go.mongodb.org/mongo-driver/v2/mongo"
@@ -28,10 +29,20 @@ type (
 	HashDb func(dbMaps map[string]*mongo.Database) string
 )
 
+var instance *Component
+var once sync.Once // 保证只初始化一次，并发安全
+
+func Instance() *Component {
+	return instance
+}
+
 func NewComponent() *Component {
-	return &Component{
-		dbMap: make(map[string]map[string]*mongo.Database),
-	}
+	once.Do(func() {
+		instance = &Component{
+			dbMap: make(map[string]map[string]*mongo.Database),
+		}
+	})
+	return instance
 }
 
 func (*Component) Name() string {
