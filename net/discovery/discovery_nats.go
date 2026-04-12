@@ -16,11 +16,11 @@ import (
 
 // DiscoveryNats master节点模式(master为单节点)
 // 先启动一个master节点
-// 其他节点启动时Request(gamego.discovery.register)，到master节点注册
-// master节点subscribe(gamego.discovery.register)，返回已注册节点列表
-// master节点publish(gamego.discovery.addMember)，当前已注册的节点到
-// 所有客户端节点subscribe(gamego.discovery.addMember)，接收新节点
-// 所有节点subscribe(gamego.discovery.unregister)，退出时注销节点
+// 其他节点启动时Request(actorgo.discovery.register)，到master节点注册
+// master节点subscribe(actorgo.discovery.register)，返回已注册节点列表
+// master节点publish(actorgo.discovery.addMember)，当前已注册的节点到
+// 所有客户端节点subscribe(actorgo.discovery.addMember)，接收新节点
+// 所有节点subscribe(actorgo.discovery.unregister)，退出时注销节点
 type DiscoveryNats struct {
 	DiscoveryDefault
 	app               cfacade.IApplication
@@ -117,10 +117,10 @@ func (m *DiscoveryNats) loadMember() {
 }
 
 func (m *DiscoveryNats) init() {
-	m.registerSubject = m.buildSubject("gamego.discovery.%s.%s.register")
-	m.unregisterSubject = m.buildSubject("gamego.discovery.%s.%s.unregister")
-	m.addSubject = m.buildSubject("gamego.discovery.%s.%s.addMember")
-	m.checkSubject = m.buildSubject("gamego.discovery.%s.%s.check")
+	m.registerSubject = m.buildSubject("actorgo.discovery.%s.%s.register")
+	m.unregisterSubject = m.buildSubject("actorgo.discovery.%s.%s.unregister")
+	m.addSubject = m.buildSubject("actorgo.discovery.%s.%s.addMember")
+	m.checkSubject = m.buildSubject("actorgo.discovery.%s.%s.check")
 
 	clog.Info("registerSubject[%v] unregisterSubject[%v] addSubject[%v] checkSubject[%v]",
 		m.registerSubject, m.unregisterSubject, m.addSubject, m.checkSubject)
