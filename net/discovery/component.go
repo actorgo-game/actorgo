@@ -25,6 +25,16 @@ func (*Component) Name() string {
 
 func (p *Component) Init() {
 	mode := cprofile.DiscoveryMode()
+	if mode == "" {
+		clog.Error("`discovery->mode` property not found in profile file.")
+		return
+	}
+
+	if "etcd" == mode {
+		Register(NewDiscoveryETCD())
+	} else {
+		Register(NewDiscoveryNats())
+	}
 
 	discovery, found := discoveryMap[mode]
 	if discovery == nil || !found {

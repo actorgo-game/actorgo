@@ -3,7 +3,6 @@ package cdiscovery
 import (
 	cfacade "github.com/actorgo-game/actorgo/facade"
 	clog "github.com/actorgo-game/actorgo/logger"
-	cprofile "github.com/actorgo-game/actorgo/profile"
 )
 
 var (
@@ -12,13 +11,6 @@ var (
 
 func init() {
 	Register(&DiscoveryDefault{})
-
-	mode := cprofile.DiscoveryMode()
-	if "etcd" == mode {
-		Register(NewDiscoveryETCD())
-	} else {
-		Register(NewDiscoveryNats())
-	}
 }
 
 func Register(discovery cfacade.IDiscovery) {
