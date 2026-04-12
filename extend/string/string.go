@@ -97,6 +97,22 @@ func ToInt64D(value string, def ...int64) int64 {
 	return val
 }
 
+func ToUint64(value string, def ...uint64) (uint64, bool) {
+	val, err := strconv.ParseUint(value, 10, 64)
+	if err != nil {
+		if len(def) > 0 {
+			return def[0], false
+		}
+		return 0, false
+	}
+	return val, true
+}
+
+func ToUint64D(value string, def ...uint64) uint64 {
+	val, _ := ToUint64(value, def...)
+	return val
+}
+
 func ToString(value any) string {
 	ret := ""
 
@@ -114,11 +130,11 @@ func ToString(value any) string {
 	case int64:
 		ret = strconv.FormatInt(t, 10)
 	case uint:
-		ret = strconv.Itoa(int(t))
+		ret = strconv.FormatUint(uint64(t), 10)
 	case uint32:
-		ret = strconv.Itoa(int(t))
+		ret = strconv.FormatUint(uint64(t), 10)
 	case uint64:
-		ret = strconv.Itoa(int(t))
+		ret = strconv.FormatUint(t, 10)
 	default:
 		v, _ := json.Marshal(t)
 		ret = string(v)

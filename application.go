@@ -42,8 +42,8 @@ type (
 )
 
 // NewApp create new application instance
-func NewApp(profileFilePath, nodeID string, isFrontend bool, mode NodeMode) *Application {
-	node, err := cprofile.Init(profileFilePath, nodeID)
+func NewApp(profileFilePath, nodeIDStr string, isFrontend bool, mode NodeMode) *Application {
+	node, err := cprofile.Init(profileFilePath, nodeIDStr)
 	if err != nil {
 		panic(err)
 	}

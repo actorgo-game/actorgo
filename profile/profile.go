@@ -2,6 +2,7 @@ package cprofile
 
 import (
 	"path/filepath"
+	"strings"
 
 	cerror "github.com/actorgo-game/actorgo/error"
 	cfile "github.com/actorgo-game/actorgo/extend/file"
@@ -12,12 +13,20 @@ import (
 
 var (
 	cfg = &struct {
-		profilePath string  // profile root dir
-		profileName string  // profile name
-		jsonConfig  *Config // profile-x.json parse to json object
-		env         string  // env name
-		debug       bool    // debug default is true
-		printLevel  string  // log print level
+		profilePath    string  // profile root dir
+		profileName    string  // profile name
+		jsonConfig     *Config // profile-x.json parse to json object
+		env            string  // env name
+		debug          bool    // debug default is true
+		printLevel     string  // log print level
+		nodeId         string
+		nodeType       string
+		nodeIdStr      string
+		bigWorldId     string // BigWorldId
+		printLogPath   string
+		configPath     string
+		actorTimeOut   int64
+		arrivalTimeOut int64
 	}{}
 )
 
@@ -41,12 +50,12 @@ func PrintLevel() string {
 	return cfg.printLevel
 }
 
-func Init(filePath, nodeID string) (cfacade.INode, error) {
+func Init(filePath, nodeIdStr string) (cfacade.INode, error) {
 	if filePath == "" {
 		return nil, cerror.Error("File path is nil.")
 	}
 
-	if nodeID == "" {
+	if nodeIdStr == "" {
 		return nil, cerror.Error("NodeID is nil.")
 	}
 
@@ -61,7 +70,14 @@ func Init(filePath, nodeID string) (cfacade.INode, error) {
 		return nil, cerror.Errorf("Load profile file error. [err = %v]", err)
 	}
 
-	node, err := GetNodeWithConfig(jsonConfig, nodeID)
+	nodeId, err := cfacade.GenNodeIdByStr(nodeIdStr)
+	if err != nil {
+		return nil, cerror.Errorf("Failed to generate node ID. [err = %v]", err)
+	}
+
+	nodeType := cfacade.GetNodeType(nodeId)
+
+	node, err := GetNodeWithConfig(jsonConfig, cstring.ToString(nodeId), cstring.ToString(nodeType))
 	if err != nil {
 		return nil, cerror.Errorf("Failed to get node config from profile file. [err = %v]", err)
 	}
@@ -73,12 +89,35 @@ func Init(filePath, nodeID string) (cfacade.INode, error) {
 	cfg.env = jsonConfig.GetString("env", "default")
 	cfg.debug = jsonConfig.GetBool("debug", true)
 	cfg.printLevel = jsonConfig.GetString("print_level", "debug")
+	cfg.printLogPath = jsonConfig.GetString("print_logpath", "./log/")
+	cfg.arrivalTimeOut = jsonConfig.GetInt64("arrival_timeout", 100)
+	cfg.configPath = jsonConfig.GetString("config_path", "./config/")
+	cfg.nodeId = node.NodeID()
+	cfg.nodeType = node.NodeType()
+	cfg.actorTimeOut = node.Settings().GetInt64("actor_time_out", 0)
+	cfg.nodeIdStr = nodeIdStr
+	cfg.bigWorldId = strings.Split(nodeIdStr, ".")[0]
 
 	return node, nil
 }
 
 func GetConfig(path ...any) cfacade.ProfileJSON {
 	return cfg.jsonConfig.GetConfig(path...)
+}
+
+func DiscoveryMode() string {
+	//set default discovery mode to nats
+	config := GetConfig("cluster").GetConfig("discovery")
+	if config == nil {
+		return "nats"
+	}
+
+	mode := config.GetString("mode")
+	if mode == "" {
+		return "nats"
+	}
+
+	return mode
 }
 
 func LoadFile(filePath, fileName string) (*Config, error) {

@@ -55,7 +55,7 @@ func (n *Node) String() string {
 	)
 }
 
-func GetNodeWithConfig(config *Config, nodeID string) (cfacade.INode, error) {
+func GetNodeWithConfig(config *Config, nodeId string, ndType string) (cfacade.INode, error) {
 	nodeConfig := config.GetConfig("node")
 	if nodeConfig.LastError() != nil {
 		return nil, cerr.Error("`nodes` property not found in profile file.")
@@ -66,12 +66,12 @@ func GetNodeWithConfig(config *Config, nodeID string) (cfacade.INode, error) {
 		for i := 0; i < typeJson.Size(); i++ {
 			item := typeJson.GetConfig(i)
 
-			if !findNodeID(nodeID, item.GetConfig("node_id")) {
+			if nodeType != ndType {
 				continue
 			}
 
 			node := &Node{
-				nodeID:     nodeID,
+				nodeID:     nodeId,
 				nodeType:   nodeType,
 				address:    item.GetString("address"),
 				rpcAddress: item.GetString("rpc_address"),
@@ -83,11 +83,7 @@ func GetNodeWithConfig(config *Config, nodeID string) (cfacade.INode, error) {
 		}
 	}
 
-	return nil, cerr.Errorf("nodeID = %s not found.", nodeID)
-}
-
-func LoadNode(nodeID string) (cfacade.INode, error) {
-	return GetNodeWithConfig(cfg.jsonConfig, nodeID)
+	return nil, cerr.Errorf("ndType = %s not found.", ndType)
 }
 
 func findNodeID(nodeID string, nodeIDJson cfacade.ProfileJSON) bool {

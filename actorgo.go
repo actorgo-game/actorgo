@@ -13,9 +13,9 @@ type (
 	}
 )
 
-func Configure(profileFilePath, nodeID string, isFrontend bool, mode NodeMode) *AppBuilder {
+func Configure(profileFilePath, nodeIDStr string, isFrontend bool, mode NodeMode) *AppBuilder {
 	appBuilder := &AppBuilder{
-		Application: NewApp(profileFilePath, nodeID, isFrontend, mode),
+		Application: NewApp(profileFilePath, nodeIDStr, isFrontend, mode),
 		components:  make([]cfacade.IComponent, 0),
 	}
 

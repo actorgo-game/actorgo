@@ -13,14 +13,14 @@ import (
 	"github.com/nats-io/nats.go"
 )
 
-// DiscoveryMaster master节点模式(master为单节点)
+// DiscoveryNats master节点模式(master为单节点)
 // 先启动一个master节点
 // 其他节点启动时Request(actorgo.discovery.register)，到master节点注册
 // master节点subscribe(actorgo.discovery.register)，返回已注册节点列表
 // master节点publish(actorgo.discovery.addMember)，当前已注册的节点到
 // 所有客户端节点subscribe(actorgo.discovery.addMember)，接收新节点
 // 所有节点subscribe(actorgo.discovery.unregister)，退出时注销节点
-type DiscoveryMaster struct {
+type DiscoveryNats struct {
 	DiscoveryDefault
 	app              cfacade.IApplication
 	thisMember       cfacade.IMember
@@ -34,30 +34,41 @@ type DiscoveryMaster struct {
 	thisMemberBytes  []byte
 }
 
-func (m *DiscoveryMaster) Name() string {
+var instanceNats *DiscoveryNats
+
+func GetNats() *DiscoveryNats {
+	return instanceNats
+}
+
+func NewDiscoveryNats() *DiscoveryNats {
+	instanceNats = &DiscoveryNats{}
+	return instanceNats
+}
+
+func (m *DiscoveryNats) Name() string {
 	return "nats"
 }
 
-func (m *DiscoveryMaster) isMaster() bool {
+func (m *DiscoveryNats) isMaster() bool {
 	return m.app.NodeID() == m.masterID
 }
 
-func (m *DiscoveryMaster) isClient() bool {
+func (m *DiscoveryNats) isClient() bool {
 	return m.app.NodeID() != m.masterID
 }
 
-func (m *DiscoveryMaster) buildSubject(subject string) string {
+func (m *DiscoveryNats) buildSubject(subject string) string {
 	return fmt.Sprintf(subject, m.prefix, m.masterID)
 }
 
-func (m *DiscoveryMaster) Load(app cfacade.IApplication) {
+func (m *DiscoveryNats) Load(app cfacade.IApplication) {
 	m.DiscoveryDefault.PreInit()
 	m.app = app
 	m.loadMember()
 	m.init()
 }
 
-func (m *DiscoveryMaster) loadMember() {
+func (m *DiscoveryNats) loadMember() {
 	// Get nats config
 	config := cprofile.GetConfig("cluster").GetConfig(m.Name())
 	if config.LastError() != nil {
@@ -89,7 +100,7 @@ func (m *DiscoveryMaster) loadMember() {
 	}
 }
 
-func (m *DiscoveryMaster) init() {
+func (m *DiscoveryNats) init() {
 	m.registerSubject = m.buildSubject("actorgo.%s.discovery.%s.register")
 	m.addSubject = m.buildSubject("actorgo.%s.discovery.%s.add")
 	m.removeSubject = m.buildSubject("actorgo.%s.discovery.%s.remove")
@@ -102,7 +113,7 @@ func (m *DiscoveryMaster) init() {
 	clog.Info("[init] Discovery = %s is running.", m.Name())
 }
 
-func (m *DiscoveryMaster) masterInit() {
+func (m *DiscoveryNats) masterInit() {
 	if m.isMaster() {
 		// add master member
 		m.AddMember(m.thisMember)
@@ -115,7 +126,7 @@ func (m *DiscoveryMaster) masterInit() {
 	}
 }
 
-func (m *DiscoveryMaster) clientInit() {
+func (m *DiscoveryNats) clientInit() {
 	if m.isClient() {
 		// receive registered node
 		m.addSubscribe()
@@ -126,7 +137,7 @@ func (m *DiscoveryMaster) clientInit() {
 	}
 }
 
-func (m *DiscoveryMaster) addSubscribe() {
+func (m *DiscoveryNats) addSubscribe() {
 	m.subscribe(m.addSubject, func(msg *nats.Msg) {
 		addMember, err := m.bytes2Member(msg.Data)
 		if err != nil {
@@ -140,7 +151,7 @@ func (m *DiscoveryMaster) addSubscribe() {
 	})
 }
 
-func (m *DiscoveryMaster) send2Master() {
+func (m *DiscoveryNats) send2Master() {
 	for {
 		if _, found := m.GetMember(m.masterID); !found {
 			m.sendRegister2Master()
@@ -152,7 +163,7 @@ func (m *DiscoveryMaster) send2Master() {
 	}
 }
 
-func (m *DiscoveryMaster) Stop() {
+func (m *DiscoveryNats) Stop() {
 	if m.isClient() {
 		m.sendRemove(m.thisNodeIDBytes)
 	}
@@ -160,7 +171,7 @@ func (m *DiscoveryMaster) Stop() {
 	clog.Debug("[Stop] NodeID = %s is unregister", m.app.NodeID())
 }
 
-func (m *DiscoveryMaster) sendRemove(data []byte) {
+func (m *DiscoveryNats) sendRemove(data []byte) {
 	err := cnats.GetConnect().Publish(m.removeSubject, data)
 	if err != nil {
 		clog.Warn("[sendRemove] Publish fail. err = %s", err)
@@ -168,7 +179,7 @@ func (m *DiscoveryMaster) sendRemove(data []byte) {
 	}
 }
 
-func (m *DiscoveryMaster) sendRegister2Master() {
+func (m *DiscoveryNats) sendRegister2Master() {
 	// register current node to master
 	rspData, err := cnats.GetConnect().Request(m.registerSubject, m.thisMemberBytes)
 	if err != nil {
@@ -192,7 +203,7 @@ func (m *DiscoveryMaster) sendRegister2Master() {
 	}
 }
 
-func (m *DiscoveryMaster) sendHeartbeat2Master() {
+func (m *DiscoveryNats) sendHeartbeat2Master() {
 	err := cnats.GetConnect().Publish(m.heartbeatSubject, m.thisNodeIDBytes)
 	if err != nil {
 		clog.Warn("[sendHeartbeat2Master] Publish fail. err = %s", err)
@@ -200,7 +211,7 @@ func (m *DiscoveryMaster) sendHeartbeat2Master() {
 	}
 }
 
-func (m *DiscoveryMaster) heartbeatSubscribe() {
+func (m *DiscoveryNats) heartbeatSubscribe() {
 	// check heartbeat
 	go m.heartbeatCheck()
 
@@ -220,7 +231,7 @@ func (m *DiscoveryMaster) heartbeatSubscribe() {
 	})
 }
 
-func (m *DiscoveryMaster) heartbeatCheck() {
+func (m *DiscoveryNats) heartbeatCheck() {
 	for {
 		m.memberMap.Range(func(key, value any) bool {
 			protoMember, ok := value.(*cproto.Member)
@@ -250,7 +261,7 @@ func (m *DiscoveryMaster) heartbeatCheck() {
 	}
 }
 
-func (m *DiscoveryMaster) registerSubscribe() {
+func (m *DiscoveryNats) registerSubscribe() {
 	m.subscribe(m.registerSubject, func(msg *nats.Msg) {
 		newMember, err := m.bytes2Member(msg.Data)
 		if err != nil {
@@ -283,7 +294,7 @@ func (m *DiscoveryMaster) registerSubscribe() {
 	})
 }
 
-func (m *DiscoveryMaster) removeSubscribe() {
+func (m *DiscoveryNats) removeSubscribe() {
 	m.subscribe(m.removeSubject, func(msg *nats.Msg) {
 		nodeID, err := m.bytes2NodeID(msg.Data)
 		if err != nil {
@@ -299,7 +310,7 @@ func (m *DiscoveryMaster) removeSubscribe() {
 	})
 }
 
-func (m *DiscoveryMaster) preloadMarshal() error {
+func (m *DiscoveryNats) preloadMarshal() error {
 	var err error
 	m.thisNodeIDBytes, err = m.NodeID2Bytes(m.app.NodeID())
 	if err != nil {
@@ -314,11 +325,11 @@ func (m *DiscoveryMaster) preloadMarshal() error {
 	return nil
 }
 
-func (m *DiscoveryMaster) member2Bytes(member cfacade.IMember) ([]byte, error) {
+func (m *DiscoveryNats) member2Bytes(member cfacade.IMember) ([]byte, error) {
 	return m.app.Serializer().Marshal(member)
 }
 
-func (m *DiscoveryMaster) memberList2Bytes() ([]byte, error) {
+func (m *DiscoveryNats) memberList2Bytes() ([]byte, error) {
 	memberList := &cproto.MemberList{}
 	m.memberMap.Range(func(key, value any) bool {
 		protoMember := value.(*cproto.Member)
@@ -329,7 +340,7 @@ func (m *DiscoveryMaster) memberList2Bytes() ([]byte, error) {
 	return m.app.Serializer().Marshal(memberList)
 }
 
-func (m *DiscoveryMaster) bytes2MemberList(data []byte) (*cproto.MemberList, error) {
+func (m *DiscoveryNats) bytes2MemberList(data []byte) (*cproto.MemberList, error) {
 	memberList := &cproto.MemberList{}
 	err := m.app.Serializer().Unmarshal(data, memberList)
 	if err != nil {
@@ -339,7 +350,7 @@ func (m *DiscoveryMaster) bytes2MemberList(data []byte) (*cproto.MemberList, err
 	return memberList, nil
 }
 
-func (m *DiscoveryMaster) NodeID2Bytes(nodeID string) ([]byte, error) {
+func (m *DiscoveryNats) NodeID2Bytes(nodeID string) ([]byte, error) {
 	nodeProto := &cproto.NodeID{
 		Value: nodeID,
 	}
@@ -347,7 +358,7 @@ func (m *DiscoveryMaster) NodeID2Bytes(nodeID string) ([]byte, error) {
 	return m.app.Serializer().Marshal(nodeProto)
 }
 
-func (m *DiscoveryMaster) bytes2Member(data []byte) (*cproto.Member, error) {
+func (m *DiscoveryNats) bytes2Member(data []byte) (*cproto.Member, error) {
 	member := &cproto.Member{}
 	err := m.app.Serializer().Unmarshal(data, member)
 	if err != nil {
@@ -357,7 +368,7 @@ func (m *DiscoveryMaster) bytes2Member(data []byte) (*cproto.Member, error) {
 	return member, nil
 }
 
-func (m *DiscoveryMaster) bytes2NodeID(data []byte) (string, error) {
+func (m *DiscoveryNats) bytes2NodeID(data []byte) (string, error) {
 	nodeIDProto := &cproto.NodeID{}
 	err := m.app.Serializer().Unmarshal(data, nodeIDProto)
 	if err != nil {
@@ -367,7 +378,7 @@ func (m *DiscoveryMaster) bytes2NodeID(data []byte) (string, error) {
 	return nodeIDProto.Value, nil
 }
 
-func (m *DiscoveryMaster) subscribe(subject string, cb nats.MsgHandler) {
+func (m *DiscoveryNats) subscribe(subject string, cb nats.MsgHandler) {
 	err := cnats.GetConnect().Subscribe(subject, cb)
 	if err != nil {
 		clog.Warn("[subscribe] fail. subject = %s, err = %s", subject, err)
