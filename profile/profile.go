@@ -30,6 +30,10 @@ var (
 	}{}
 )
 
+func ArrivalTimeOut() int64 {
+	return cfg.arrivalTimeOut
+}
+
 func Path() string {
 	return cfg.profilePath
 }
@@ -99,6 +103,10 @@ func Init(filePath, nodeIdStr string) (cfacade.INode, error) {
 	cfg.bigWorldId = strings.Split(nodeIdStr, ".")[0]
 
 	return node, nil
+}
+
+func LoadNode(nodeId, nodeType string) (cfacade.INode, error) {
+	return GetNodeWithConfig(cfg.jsonConfig, nodeId, nodeType)
 }
 
 func GetConfig(path ...any) cfacade.ProfileJSON {

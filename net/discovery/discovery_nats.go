@@ -4,34 +4,33 @@ import (
 	"fmt"
 	"time"
 
-	ctime "github.com/actorgo-game/actorgo/extend/time"
+	cstring "github.com/actorgo-game/actorgo/extend/string"
 	cfacade "github.com/actorgo-game/actorgo/facade"
 	clog "github.com/actorgo-game/actorgo/logger"
 	cnats "github.com/actorgo-game/actorgo/net/nats"
 	cproto "github.com/actorgo-game/actorgo/net/proto"
 	cprofile "github.com/actorgo-game/actorgo/profile"
+
 	"github.com/nats-io/nats.go"
 )
 
 // DiscoveryNats master节点模式(master为单节点)
 // 先启动一个master节点
-// 其他节点启动时Request(actorgo.discovery.register)，到master节点注册
-// master节点subscribe(actorgo.discovery.register)，返回已注册节点列表
-// master节点publish(actorgo.discovery.addMember)，当前已注册的节点到
-// 所有客户端节点subscribe(actorgo.discovery.addMember)，接收新节点
-// 所有节点subscribe(actorgo.discovery.unregister)，退出时注销节点
+// 其他节点启动时Request(gamego.discovery.register)，到master节点注册
+// master节点subscribe(gamego.discovery.register)，返回已注册节点列表
+// master节点publish(gamego.discovery.addMember)，当前已注册的节点到
+// 所有客户端节点subscribe(gamego.discovery.addMember)，接收新节点
+// 所有节点subscribe(gamego.discovery.unregister)，退出时注销节点
 type DiscoveryNats struct {
 	DiscoveryDefault
-	app              cfacade.IApplication
-	thisMember       cfacade.IMember
-	masterID         string
-	prefix           string
-	registerSubject  string
-	addSubject       string
-	removeSubject    string
-	heartbeatSubject string
-	thisNodeIDBytes  []byte
-	thisMemberBytes  []byte
+	app               cfacade.IApplication
+	thisMember        cfacade.IMember
+	thisMemberBytes   []byte
+	masterMember      cfacade.IMember
+	registerSubject   string
+	unregisterSubject string
+	addSubject        string
+	checkSubject      string
 }
 
 var instanceNats *DiscoveryNats
@@ -50,18 +49,19 @@ func (m *DiscoveryNats) Name() string {
 }
 
 func (m *DiscoveryNats) isMaster() bool {
-	return m.app.NodeID() == m.masterID
+	return m.app.NodeID() == m.masterMember.GetNodeID()
 }
 
 func (m *DiscoveryNats) isClient() bool {
-	return m.app.NodeID() != m.masterID
+	return m.app.NodeID() != m.masterMember.GetNodeID()
 }
 
 func (m *DiscoveryNats) buildSubject(subject string) string {
-	return fmt.Sprintf(subject, m.prefix, m.masterID)
+	return fmt.Sprintf(subject, cprofile.Env(), m.masterMember.GetNodeID())
 }
 
 func (m *DiscoveryNats) Load(app cfacade.IApplication) {
+	clog.Info("Load discovery [mode = %s].", m.Name())
 	m.DiscoveryDefault.PreInit()
 	m.app = app
 	m.loadMember()
@@ -69,319 +69,236 @@ func (m *DiscoveryNats) Load(app cfacade.IApplication) {
 }
 
 func (m *DiscoveryNats) loadMember() {
-	// Get nats config
+	m.thisMember = &cproto.Member{
+		NodeID:   m.app.NodeID(),
+		NodeType: m.app.NodeType(),
+		Address:  m.app.RpcAddress(),
+		Settings: make(map[string]string),
+	}
+
+	memberBytes, err := m.app.Serializer().Marshal(m.thisMember)
+	if err != nil {
+		clog.Warn("err = %s", err)
+		return
+	}
+
+	m.thisMemberBytes = memberBytes
+
+	//get nats config
 	config := cprofile.GetConfig("cluster").GetConfig(m.Name())
 	if config.LastError() != nil {
-		clog.Fatal("[loadMember] Nats config not found. err = %v", config.LastError())
+		clog.Error("nats config parameter not found. err = %v", config.LastError())
 	}
 
-	m.prefix = config.GetString("prefix", "node")
-
-	// Get master node id
-	m.masterID = config.GetString("master_node_id")
-	if m.masterID == "" {
-		clog.Fatal("[loadMember] Master node id not in config.")
+	// get master node id
+	masterId := config.GetString("master_node_id")
+	if masterId == "" {
+		clog.Error("master node id not in config.")
 	}
 
-	// Default timeout is 3 seconds
-	clusterHeartbeatTimeout := m.app.Settings().GetDuration("cluster_heartbeat_timeout", 3) * time.Second
+	masterType := cstring.ToString(cfacade.GetNodeType(cstring.ToUint64D(masterId)))
+	if masterType == "" {
+		clog.Error("master node type not in config.")
+	}
+	clog.Info("master masterId[%s] masterType[%s]", masterId, masterType)
 
-	m.thisMember = &cproto.Member{
-		NodeID:           m.app.NodeID(),
-		NodeType:         m.app.NodeType(),
-		Address:          m.app.RpcAddress(),
-		LastAt:           ctime.Now().ToMillisecond(),
-		HeartbeatTimeout: clusterHeartbeatTimeout.Milliseconds(),
-		//Settings: make(map[string]string),
+	// load master node config
+	masterNode, err := cprofile.LoadNode(masterId, masterType)
+	if err != nil {
+		clog.Error(err.Error())
 	}
 
-	if err := m.preloadMarshal(); err != nil {
-		clog.Fatal("[init] Marshal data error. err = %v", err)
+	m.masterMember = &cproto.Member{
+		NodeID:   masterNode.NodeID(),
+		NodeType: masterNode.NodeType(),
+		Address:  masterNode.RpcAddress(),
+		Settings: make(map[string]string),
 	}
 }
 
 func (m *DiscoveryNats) init() {
-	m.registerSubject = m.buildSubject("actorgo.%s.discovery.%s.register")
-	m.addSubject = m.buildSubject("actorgo.%s.discovery.%s.add")
-	m.removeSubject = m.buildSubject("actorgo.%s.discovery.%s.remove")
-	m.heartbeatSubject = m.buildSubject("actorgo.%s.discovery.%s.heartbeat")
+	m.registerSubject = m.buildSubject("gamego.discovery.%s.%s.register")
+	m.unregisterSubject = m.buildSubject("gamego.discovery.%s.%s.unregister")
+	m.addSubject = m.buildSubject("gamego.discovery.%s.%s.addMember")
+	m.checkSubject = m.buildSubject("gamego.discovery.%s.%s.check")
 
-	// Node init
-	m.masterInit()
-	m.clientInit()
+	clog.Info("registerSubject[%v] unregisterSubject[%v] addSubject[%v] checkSubject[%v]",
+		m.registerSubject, m.unregisterSubject, m.addSubject, m.checkSubject)
 
-	clog.Info("[init] Discovery = %s is running.", m.Name())
-}
-
-func (m *DiscoveryNats) masterInit() {
-	if m.isMaster() {
-		// add master member
-		m.AddMember(m.thisMember)
-		// subscribe register message
-		m.registerSubscribe()
-		// subscribe remove message
-		m.removeSubscribe()
-		// subscribe heartbeat message
-		m.heartbeatSubscribe()
-	}
-}
-
-func (m *DiscoveryNats) clientInit() {
-	if m.isClient() {
-		// receive registered node
-		m.addSubscribe()
-		// subscribe remove message
-		m.removeSubscribe()
-		// send register&heartbeat message to master node
-		go m.send2Master()
-	}
-}
-
-func (m *DiscoveryNats) addSubscribe() {
-	m.subscribe(m.addSubject, func(msg *nats.Msg) {
-		addMember, err := m.bytes2Member(msg.Data)
+	m.subscribe(m.unregisterSubject, func(msg *nats.Msg) {
+		unregisterMember := &cproto.Member{}
+		err := m.app.Serializer().Unmarshal(msg.Data, unregisterMember)
 		if err != nil {
-			clog.Warn("[addSubscribe] bytes to Member error. err = %s", err)
+			clog.Warn("err = %s", err)
 			return
 		}
 
+		clog.Info("unregister Subject NodeID[%v]", unregisterMember.NodeID)
+		if unregisterMember.NodeID == m.app.NodeID() {
+			return
+		}
+
+		// remove member
+		m.RemoveMember(unregisterMember.NodeID)
+	})
+
+	clog.Info("appNodeId[%v] appNodeType[%v] masterMember[%v] GetNodeId[%v]",
+		m.app.NodeID(), m.app.NodeType(), m.masterMember, m.masterMember.GetNodeID())
+	m.serverInit()
+	m.clientInit()
+
+	clog.Info("[discovery = %s] is running.", m.Name())
+}
+
+func (m *DiscoveryNats) serverInit() {
+	if !m.isMaster() {
+		return
+	}
+
+	//addMember master node
+	clog.Info("mastermember[%v]", m.masterMember)
+	m.AddMember(m.masterMember)
+
+	// subscribe register message
+	m.subscribe(m.registerSubject, func(msg *nats.Msg) {
+		newMember := &cproto.Member{}
+		err := m.app.Serializer().Unmarshal(msg.Data, newMember)
+		if err != nil {
+			clog.Warn("IMember Unmarshal[name = %s] error. dataLen = %+v, err = %s",
+				m.app.Serializer().Name(),
+				len(msg.Data),
+				err,
+			)
+			return
+		}
+
+		// addMember new member
+		clog.Info("newMember[%v] Subject[%v] Reply[%v]", newMember, msg.Subject, msg.Reply)
+		m.AddMember(newMember)
+
+		// response member list
+		memberList := &cproto.MemberList{}
+
+		m.memberMap.Range(func(key, value any) bool {
+			protoMember := value.(*cproto.Member)
+			if protoMember.NodeID != newMember.NodeID {
+				memberList.List = append(memberList.List, protoMember)
+			}
+
+			return true
+		})
+
+		rspData, err := m.app.Serializer().Marshal(memberList)
+		if err != nil {
+			clog.Warn("marshal fail. err = %s", err)
+			return
+		}
+
+		// response member list
+		err = msg.Respond(rspData)
+		if err != nil {
+			clog.Warn("respond fail. err = %s", err)
+			return
+		}
+
+		// publish addMember new node
+		err = cnats.GetConnect().Publish(m.addSubject, msg.Data)
+		if err != nil {
+			clog.Warn("publish fail. err = %s", err)
+			return
+		}
+	})
+
+	// subscribe check message
+	m.subscribe(m.checkSubject, func(msg *nats.Msg) {
+		msg.Respond(nil)
+	})
+}
+
+func (m *DiscoveryNats) clientInit() {
+	if !m.isClient() {
+		return
+	}
+	clog.Info("client init")
+
+	// receive registered node
+	m.subscribe(m.addSubject, func(msg *nats.Msg) {
+		addMember := &cproto.Member{}
+		err := m.app.Serializer().Unmarshal(msg.Data, addMember)
+		if err != nil {
+			clog.Warn("err = %s", err)
+			return
+		}
+
+		clog.Info("Subject[%v] Reply[%v] addMember[%v] addSubject[%v]",
+			msg.Subject, msg.Reply, addMember, m.addSubject)
 		if _, ok := m.GetMember(addMember.NodeID); !ok {
 			m.AddMember(addMember)
 		}
 	})
+
+	go m.checkMaster()
 }
 
-func (m *DiscoveryNats) send2Master() {
+func (m *DiscoveryNats) checkMaster() {
 	for {
-		if _, found := m.GetMember(m.masterID); !found {
-			m.sendRegister2Master()
-		} else {
-			m.sendHeartbeat2Master()
+		_, found := m.GetMember(m.masterMember.GetNodeID())
+		if !found {
+			m.registerToMaster()
 		}
 
 		time.Sleep(cnats.ReconnectDelay())
 	}
 }
 
-func (m *DiscoveryNats) Stop() {
-	if m.isClient() {
-		m.sendRemove(m.thisNodeIDBytes)
-	}
-
-	clog.Debug("[Stop] NodeID = %s is unregister", m.app.NodeID())
-}
-
-func (m *DiscoveryNats) sendRemove(data []byte) {
-	err := cnats.GetConnect().Publish(m.removeSubject, data)
-	if err != nil {
-		clog.Warn("[sendRemove] Publish fail. err = %s", err)
-		return
-	}
-}
-
-func (m *DiscoveryNats) sendRegister2Master() {
+func (m *DiscoveryNats) registerToMaster() {
 	// register current node to master
-	rspData, err := cnats.GetConnect().Request(m.registerSubject, m.thisMemberBytes)
+	rsp, err := cnats.GetConnect().Request(m.registerSubject, m.thisMemberBytes)
 	if err != nil {
-		clog.Warn("[sendRegister2Master] Fail. master = %s, err = %s",
-			m.masterID,
-			err,
+		clog.Warn("register node to [master = %s] fail. [address = %s] registerSubject[%v] err[%v] ",
+			m.masterMember.GetNodeID(),
+			cnats.GetConnect().Address(),
+			m.registerSubject,
+			err.Error(),
 		)
 		return
 	}
 
-	clog.Info("[sendRegister2Master] OK. master = %s, member = %s", m.masterID, m.thisMember)
+	clog.Info("register node to [master = %s]. [member = %s]",
+		m.masterMember,
+		m.thisMember,
+	)
 
-	memberList, err := m.bytes2MemberList(rspData)
+	memberList := cproto.MemberList{}
+	err = m.app.Serializer().Unmarshal(rsp, &memberList)
 	if err != nil {
-		clog.Warn("[sendRegister2Master] Rsp data error. err = %s", err)
+		clog.Warn("err = %s", err)
 		return
 	}
 
+	clog.Info("memberList[%v]", memberList)
 	for _, member := range memberList.GetList() {
 		m.AddMember(member)
 	}
 }
 
-func (m *DiscoveryNats) sendHeartbeat2Master() {
-	err := cnats.GetConnect().Publish(m.heartbeatSubject, m.thisNodeIDBytes)
+func (m *DiscoveryNats) Stop() {
+	err := cnats.GetConnect().Publish(m.unregisterSubject, m.thisMemberBytes)
 	if err != nil {
-		clog.Warn("[sendHeartbeat2Master] Publish fail. err = %s", err)
+		clog.Warn("publish fail. err = %s", err)
 		return
 	}
-}
 
-func (m *DiscoveryNats) heartbeatSubscribe() {
-	// check heartbeat
-	go m.heartbeatCheck()
-
-	m.subscribe(m.heartbeatSubject, func(msg *nats.Msg) {
-		nodeID, err := m.bytes2NodeID(msg.Data)
-		if err != nil {
-			clog.Warn("[heartbeatSubscribe] bytes to NodeID error. err = %v", err)
-			return
-		}
-
-		if value, found := m.GetMember(nodeID); found {
-			if protoMember, ok := value.(*cproto.Member); ok {
-				// update last heartbeat time
-				protoMember.LastAt = ctime.Now().ToMillisecond()
-			}
-		}
-	})
-}
-
-func (m *DiscoveryNats) heartbeatCheck() {
-	for {
-		m.memberMap.Range(func(key, value any) bool {
-			protoMember, ok := value.(*cproto.Member)
-			if !ok {
-				clog.Warn("[heartbeatCheck] Member type error. Member = %v", value)
-				return true
-			}
-
-			//  Determine whether the heartbeat of the node is timed out
-			if protoMember.IsTimeout(ctime.Now().NowDiffMillisecond()) {
-				m.RemoveMember(protoMember.NodeID)
-
-				nodeIDBytes, err := m.NodeID2Bytes(protoMember.NodeID)
-				if err != nil {
-					clog.Warn("[heartbeatCheck] NodeID2Bytes error. err = %s", err)
-					return true
-				}
-
-				// send nodeID bytes remove message to subscribe nodes
-				m.sendRemove(nodeIDBytes)
-			}
-
-			return true
-		})
-
-		time.Sleep(time.Second) // sleep 1 second
-	}
-}
-
-func (m *DiscoveryNats) registerSubscribe() {
-	m.subscribe(m.registerSubject, func(msg *nats.Msg) {
-		newMember, err := m.bytes2Member(msg.Data)
-		if err != nil {
-			clog.Warn("[registerSubscribe] bytes to IMember Unmarshal error. err = %s", err)
-			return
-		}
-
-		// addMember new member
-		m.AddMember(newMember)
-
-		// Response member list to new member node
-		memberListBytes, err := m.memberList2Bytes()
-		if err != nil {
-			clog.Warn("[registerSubscribe] Marshal fail. err = %s", err)
-			return
-		}
-
-		err = msg.Respond(memberListBytes)
-		if err != nil {
-			clog.Warn("[registerSubscribe] Respond fail. err = %s", err)
-			return
-		}
-
-		// Publish new member data to all client node
-		err = cnats.GetConnect().Publish(m.addSubject, msg.Data)
-		if err != nil {
-			clog.Warn("[registerSubscribe] Add subject publish fail. err = %s", err)
-			return
-		}
-	})
-}
-
-func (m *DiscoveryNats) removeSubscribe() {
-	m.subscribe(m.removeSubject, func(msg *nats.Msg) {
-		nodeID, err := m.bytes2NodeID(msg.Data)
-		if err != nil {
-			clog.Warn("[removeSubscribe] bytes to NodeID error. err = %s", err)
-			return
-		}
-
-		if nodeID == m.app.NodeID() {
-			return
-		}
-		// remove member
-		m.RemoveMember(nodeID)
-	})
-}
-
-func (m *DiscoveryNats) preloadMarshal() error {
-	var err error
-	m.thisNodeIDBytes, err = m.NodeID2Bytes(m.app.NodeID())
-	if err != nil {
-		return err
-	}
-
-	m.thisMemberBytes, err = m.member2Bytes(m.thisMember)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *DiscoveryNats) member2Bytes(member cfacade.IMember) ([]byte, error) {
-	return m.app.Serializer().Marshal(member)
-}
-
-func (m *DiscoveryNats) memberList2Bytes() ([]byte, error) {
-	memberList := &cproto.MemberList{}
-	m.memberMap.Range(func(key, value any) bool {
-		protoMember := value.(*cproto.Member)
-		memberList.List = append(memberList.List, protoMember)
-		return true
-	})
-
-	return m.app.Serializer().Marshal(memberList)
-}
-
-func (m *DiscoveryNats) bytes2MemberList(data []byte) (*cproto.MemberList, error) {
-	memberList := &cproto.MemberList{}
-	err := m.app.Serializer().Unmarshal(data, memberList)
-	if err != nil {
-		return nil, err
-	}
-
-	return memberList, nil
-}
-
-func (m *DiscoveryNats) NodeID2Bytes(nodeID string) ([]byte, error) {
-	nodeProto := &cproto.NodeID{
-		Value: nodeID,
-	}
-
-	return m.app.Serializer().Marshal(nodeProto)
-}
-
-func (m *DiscoveryNats) bytes2Member(data []byte) (*cproto.Member, error) {
-	member := &cproto.Member{}
-	err := m.app.Serializer().Unmarshal(data, member)
-	if err != nil {
-		return nil, err
-	}
-
-	return member, nil
-}
-
-func (m *DiscoveryNats) bytes2NodeID(data []byte) (string, error) {
-	nodeIDProto := &cproto.NodeID{}
-	err := m.app.Serializer().Unmarshal(data, nodeIDProto)
-	if err != nil {
-		return "", err
-	}
-
-	return nodeIDProto.Value, nil
+	clog.Debug("[nodeId = %s] unregister node to [master = %s]",
+		m.app.NodeID(),
+		m.masterMember.GetNodeID(),
+	)
 }
 
 func (m *DiscoveryNats) subscribe(subject string, cb nats.MsgHandler) {
 	err := cnats.GetConnect().Subscribe(subject, cb)
 	if err != nil {
-		clog.Warn("[subscribe] fail. subject = %s, err = %s", subject, err)
+		clog.Warn("subscribe fail. err = %s subject[%v] Address[%v]", err, subject, cnats.GetConnect().Address())
 		return
 	}
 }

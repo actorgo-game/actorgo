@@ -10,6 +10,7 @@ import (
 	cfacade "github.com/actorgo-game/actorgo/facade"
 	clog "github.com/actorgo-game/actorgo/logger"
 	cproto "github.com/actorgo-game/actorgo/net/proto"
+	cprofile "github.com/actorgo-game/actorgo/profile"
 )
 
 type (
@@ -35,7 +36,7 @@ func NewSystem() *System {
 		remoteInvokeFunc: InvokeRemoteFunc,
 		wg:               &sync.WaitGroup{},
 		callTimeout:      3 * time.Second,
-		arrivalTimeOut:   100,
+		arrivalTimeOut:   cprofile.ArrivalTimeOut(),
 		executionTimeout: 100,
 	}
 
