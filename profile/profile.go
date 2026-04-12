@@ -27,6 +27,7 @@ var (
 		configPath     string
 		actorTimeOut   int64
 		arrivalTimeOut int64
+		nodeName       string
 	}{}
 )
 
@@ -101,6 +102,7 @@ func Init(filePath, nodeIdStr string) (cfacade.INode, error) {
 	cfg.actorTimeOut = node.Settings().GetInt64("actor_time_out", 0)
 	cfg.nodeIdStr = nodeIdStr
 	cfg.bigWorldId = strings.Split(nodeIdStr, ".")[0]
+	cfg.nodeName = node.Settings().GetString("node_name", "default")
 
 	return node, nil
 }
@@ -111,6 +113,14 @@ func LoadNode(nodeId, nodeType string) (cfacade.INode, error) {
 
 func GetConfig(path ...any) cfacade.ProfileJSON {
 	return cfg.jsonConfig.GetConfig(path...)
+}
+
+func NodeName() string {
+	return cfg.nodeName
+}
+
+func PrintLogPath() string {
+	return cfg.printLogPath + "/" + cfg.nodeName + "." + cfg.nodeIdStr + "/"
 }
 
 func DiscoveryMode() string {
