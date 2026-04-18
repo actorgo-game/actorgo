@@ -115,6 +115,10 @@ func GetConfig(path ...any) cfacade.ProfileJSON {
 	return cfg.jsonConfig.GetConfig(path...)
 }
 
+func ConfigPath() string {
+	return cfg.configPath
+}
+
 func NodeName() string {
 	return cfg.nodeName
 }
