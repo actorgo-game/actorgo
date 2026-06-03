@@ -122,7 +122,7 @@ func NewConfigLogger(config *Config, opts ...zap.Option) *ActorLogger {
 		opts = append(opts, zap.AddCaller())
 	}
 
-	opts = append(opts, zap.AddStacktrace(GetLevel(config.StackLevel)))
+	//opts = append(opts, zap.AddStacktrace(GetLevel(config.StackLevel)))
 
 	var writers []zapcore.WriteSyncer
 
