@@ -1,12 +1,10 @@
-// 	protoc-gen-go v1.31.0
-// 	protoc        v4.24.2
+# Protobuf 生成
 
-#1.安装protoc-gen-go
-go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+安装生成器：
 
+```bash
+go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
+```
 
-#2.安装protoc 3.15.8版本 (支持optional, https://github.com/protocolbuffers/protobuf/releases/tag/v3.15.8)
-wget https://github.com/protocolbuffers/protobuf/releases/download/v3.15.8/protoc-3.15.8-linux-x86_64.zip
-unzip protoc-3.15.8-linux-x86_64.zip -d /usr/local
-chmod +x /usr/local/bin/protoc
-protoc --version
+AGP 协议定义�?`agp.proto`，生成的 Go 文件与其他框�?PB 类型统一放在当前目录�?
+框架协议运行 `make protoc`。业�?proto 使用标准 `--go_out` 生成 PB 类型，Actor 使用 `Methods().Register(MethodID, handler)` 注册方法�?

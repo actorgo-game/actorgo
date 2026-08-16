@@ -1,0 +1,106 @@
+syntax = "proto3";
+
+package actorgo.protocol.v1;
+
+option go_package = "github.com/actorgo-game/actorgo/net/proto;cproto";
+
+// StatusCode is shared by AGP, HTTP Actor calls and cluster envelopes.
+enum StatusCode {
+  STATUS_OK = 0;
+  STATUS_CANCELLED = 1;
+  STATUS_INVALID_ARGUMENT = 2;
+  STATUS_DEADLINE_EXCEEDED = 3;
+  STATUS_NOT_FOUND = 4;
+  STATUS_ALREADY_EXISTS = 5;
+  STATUS_PERMISSION_DENIED = 6;
+  STATUS_UNAUTHENTICATED = 7;
+  STATUS_RESOURCE_EXHAUSTED = 8;
+  STATUS_FAILED_PRECONDITION = 9;
+  STATUS_ABORTED = 10;
+  STATUS_INTERNAL = 11;
+  STATUS_UNAVAILABLE = 12;
+  STATUS_UNSUPPORTED_MEDIA = 13;
+}
+
+// Packet is the complete AGP application frame. The outer frame is always
+// protobuf; codec selects only how Request/Response/Notify.body is encoded.
+message Packet {
+  oneof kind {
+    Request request = 1;
+    Response response = 2;
+    Notify notify = 3;
+  }
+
+  map<string, bytes> metadata = 4;
+  int32 codec = 5;
+}
+
+// Request expects exactly one Response with the same request_id.
+message Request {
+  uint32 request_id = 1;
+  uint32 method_id = 2;
+  uint32 timeout_ms = 3;
+  bytes body = 4;
+}
+
+// Response carries transport status separately from the encoded business body.
+message Response {
+  uint32 request_id = 1;
+  int32 code = 2;
+  string message = 3;
+  bytes body = 4;
+}
+
+// Notify is one-way and never receives a Response.
+message Notify {
+  uint32 method_id = 1;
+  bytes body = 2;
+}
+
+// HandshakeRequest negotiates the highest protocol version supported by both ends.
+message HandshakeRequest {
+  repeated uint32 supported_versions = 1;
+}
+
+// HandshakeResponse publishes connection-level limits selected by the server.
+message HandshakeResponse {
+  uint32 protocol_version = 1;
+  uint32 heartbeat_interval_ms = 2;
+  uint32 max_frame_size = 3;
+  string connection_id = 4;
+}
+
+// HeartbeatRequest and HeartbeatResponse measure liveness without Actor routing.
+message HeartbeatRequest {
+  int64 client_time_ms = 1;
+}
+
+message HeartbeatResponse {
+  int64 client_time_ms = 1;
+  int64 server_time_ms = 2;
+}
+
+// CancelNotify cancels an in-flight Request on the same connection.
+message CancelNotify {
+  uint32 request_id = 1;
+}
+
+// KickNotify closes the connection and optionally permits client reconnection.
+message KickNotify {
+  int32 reason_code = 1;
+  string reason = 2;
+  bool reconnectable = 3;
+}
+
+// GoAwayNotify is used during graceful server shutdown.
+message GoAwayNotify {
+  int32 reason_code = 1;
+  uint32 retry_after_ms = 2;
+}
+
+// HTTPError is the stable error body returned by the curl/HTTP adapter.
+message HTTPError {
+  int32 code = 1;
+  string message = 2;
+  string request_id = 3;
+}

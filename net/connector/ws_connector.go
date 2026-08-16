@@ -3,6 +3,7 @@ package cconnector
 import (
 	"io"
 	"net/http"
+	"slices"
 	"time"
 
 	cfacade "github.com/actorgo-game/actorgo/facade"
@@ -11,18 +12,18 @@ import (
 )
 
 type (
+	// WSConnector upgrades HTTP connections and dispatches binary WebSocket streams.
 	WSConnector struct {
 		cfacade.Component
-		Connector
+		*Connector
 		Options
-		upgrade *websocket.Upgrader
+		upgrade             *websocket.Upgrader
+		requiredSubprotocol string
 	}
 
-	// WSConn is an adapter to t.INetConn, which implements all INetConn
-	// interface base on *websocket.INetConn
+	// WSConn adapts gorilla/websocket messages to net.Conn for the connector.
 	WSConn struct {
 		*websocket.Conn
-		typ    int // message type
 		reader io.Reader
 	}
 )
@@ -31,13 +32,12 @@ func (*WSConnector) Name() string {
 	return "websocket_connector"
 }
 
-func (w *WSConnector) OnAfterInit() {
-}
-
+// OnStop closes the listener and stops connection dispatch.
 func (w *WSConnector) OnStop() {
-	w.Stop()
+	w.Connector.Stop()
 }
 
+// NewWS creates a WebSocket connector for the supplied listen address.
 func NewWS(address string, opts ...Option) *WSConnector {
 	if address == "" {
 		clog.Warn("create websocket fail. address is null.")
@@ -69,6 +69,7 @@ func NewWS(address string, opts ...Option) *WSConnector {
 	return ws
 }
 
+// Start serves WebSocket upgrade requests until the listener is closed.
 func (w *WSConnector) Start() {
 	listener, err := w.GetListener(w.certFile, w.keyFile, w.address)
 	if err != nil {
@@ -85,17 +86,30 @@ func (w *WSConnector) Start() {
 	http.Serve(listener, w)
 }
 
-func (w *WSConnector) Stop() {
-	w.Connector.Stop()
-}
-
+// SetUpgrade replaces the WebSocket upgrader before Start.
 func (w *WSConnector) SetUpgrade(upgrade *websocket.Upgrader) {
 	if upgrade != nil {
 		w.upgrade = upgrade
 	}
 }
 
+// SetRequiredSubprotocol requires explicit AGP version negotiation at upgrade.
+func (w *WSConnector) SetRequiredSubprotocol(protocol string) {
+	// AGP WebSocket clients must explicitly negotiate agp.v1; this prevents a
+	// generic WebSocket client from sending bytes interpreted as AGP packets.
+	w.requiredSubprotocol = protocol
+	if protocol != "" {
+		w.upgrade.Subprotocols = []string{protocol}
+	}
+}
+
+// ServeHTTP validates AGP negotiation, upgrades the request, and queues the connection.
 func (w *WSConnector) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+	if w.requiredSubprotocol != "" && !slices.Contains(websocket.Subprotocols(r), w.requiredSubprotocol) {
+		rw.Header().Set("Sec-WebSocket-Protocol", w.requiredSubprotocol)
+		http.Error(rw, "websocket subprotocol required", http.StatusUpgradeRequired)
+		return
+	}
 	wsConn, err := w.upgrade.Upgrade(rw, r, nil)
 	if err != nil {
 		clog.Info("Upgrade failure, URI=%s, Error=%s", r.RequestURI, err.Error())
@@ -116,11 +130,10 @@ func NewWSConn(conn *websocket.Conn) WSConn {
 
 func (c *WSConn) Read(b []byte) (int, error) {
 	if c.reader == nil {
-		t, r, err := c.NextReader()
+		_, r, err := c.NextReader()
 		if err != nil {
 			return 0, err
 		}
-		c.typ = t
 		c.reader = r
 	}
 	n, err := c.reader.Read(b)

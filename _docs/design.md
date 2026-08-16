@@ -191,16 +191,16 @@ actorgo/
 
 ```go
 // 方式一：从配置文件构建
-app := actorgo.Configure(profileFilePath, nodeID, isFrontend, mode)
+app := actorgo.Configure(profileFilePath, nodeID, mode)
 
 // 方式二：从已有 Node 构建
-app := actorgo.ConfigureNode(node, isFrontend, mode)
+app := actorgo.ConfigureNode(node, mode)
 ```
 
 `AppBuilder` 嵌入了 `*Application`，并提供链式调用：
 
 ```go
-actorgo.Configure("profile.json", "game-1", true, actorgo.Cluster).
+actorgo.Configure("profile.json", "game-1", actorgo.Cluster).
     SetNetParser(pomelo.NewParser()).     // 设置协议解析器
     AddActors(&GameActor{}, &RoomActor{}). // 添加 Actor Handler
     Register(&myComponent{}).              // 注册自定义组件
@@ -216,7 +216,6 @@ actorgo.Configure("profile.json", "game-1", true, actorgo.Cluster).
 | 字段 | 类型 | 说明 |
 |------|------|------|
 | `INode` | 嵌入接口 | 节点信息（ID、类型、地址） |
-| `isFrontend` | `bool` | 是否为前端节点（网关） |
 | `nodeMode` | `NodeMode` | 集群/单机模式 |
 | `components` | `[]IComponent` | 所有注册的组件 |
 | `actorSystem` | `*cactor.Component` | Actor 系统 |
@@ -354,7 +353,7 @@ InitState(0) → WorkerState(1) → FreeState(2) → StopState(3)
 | `FreeState` | 2 | 空闲状态（预留） |
 | `StopState` | 3 | 停止状态，排空队列后退出 |
 
-只有处于 `WorkerState` 的 Actor 才会接收新消息（`PostLocal`/`PostRemote` 时会检查状态）。进入 `StopState` 后，Actor 会继续处理队列中残留的消息，确保消息不丢失，直到所有队列清空后才真正退出。
+只有处于 `WorkerState` 的 Actor 才会接收新消息（`Post` 时会检查状态）。进入 `StopState` 后，Actor 会继续处理队列中残留的消息，确保消息不丢失，直到所有队列清空后才真正退出。
 
 ### 4.4 Actor 主循环
 
@@ -495,7 +494,7 @@ type actorChild struct {
 消息到达父 Actor
   ├── handler.OnLocalReceived(m) → 拦截/预处理
   ├── m.TargetPath().IsChild() ?
-  │   ├── 是 → findChildActor(m) → childActor.PostLocal(m)
+  │   ├── 是 → findChildActor(m) → childActor.Post(m)
   │   └── 否 → invokeFunc(m) 直接处理
 ```
 
@@ -634,7 +633,7 @@ Call(source, target, funcName, arg)
   │   │   └── Cluster.PublishRemote(nodeID, packet) → NATS
   │   └── 否（本节点）
   │       ├── 构造 Message
-  │       └── System.PostRemote(message) → Actor.remoteMail
+  │       └── System.Post(message) → Actor.remoteMail
 ```
 
 **CallWait 的实现差异**：
@@ -1141,7 +1140,7 @@ NATS Subscribe(remoteSubject)
   │   ├── IsCluster = true
   │   ├── Args = packet.ArgBytes（[]byte 形式）
   │   └── Reply = natsMsg.Reply（若有）
-  └── ActorSystem.PostRemote(message)
+  └── ActorSystem.Post(message)
       └── Actor.remoteMail.Push(message)
 ```
 

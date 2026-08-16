@@ -9,10 +9,7 @@ import (
 )
 
 func TestPB(t *testing.T) {
-	rsp := &cproto.Response{
-		Code: 11,
-		Data: []byte{1, 2, 3},
-	}
+	rsp := &cproto.NodeID{Value: "node-1"}
 
 	gobBytes, err := Encode(rsp)
 	if err != nil {
@@ -20,12 +17,12 @@ func TestPB(t *testing.T) {
 		return
 	}
 
-	rsp1Type := reflect.TypeFor[*cproto.Response]()
+	rsp1Type := reflect.TypeFor[*cproto.NodeID]()
 
 	x, err := Decode(gobBytes, []reflect.Type{rsp1Type})
 	fmt.Println(x, err)
 
-	rsp1, ok := x[0].Interface().(*cproto.Response)
+	rsp1, ok := x[0].Interface().(*cproto.NodeID)
 	fmt.Println(rsp1, ok)
 
 }

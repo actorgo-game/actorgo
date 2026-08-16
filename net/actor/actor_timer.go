@@ -23,6 +23,7 @@ type (
 )
 
 func newTimer(thisActor *Actor) actorTimer {
+	ensureGlobalTimer()
 	return actorTimer{
 		queue:        newQueue(),
 		thisActor:    thisActor,

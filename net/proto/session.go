@@ -1,23 +1,14 @@
 package cproto
 
 import (
-	cconst "github.com/actorgo-game/actorgo/const"
 	cstring "github.com/actorgo-game/actorgo/extend/string"
-)
-
-const (
-	MIDKey = "mid"
 )
 
 func (x *Session) IsBind() bool {
 	return x.Uid > 0
 }
 
-func (x *Session) ActorPath() string {
-	return x.AgentPath + cconst.DOT + x.Sid
-}
-
-func (x *Session) Add(key string, value any) {
+func (x *Session) SetAny(key string, value any) {
 	x.Data[key] = cstring.ToString(value)
 }
 
@@ -31,14 +22,6 @@ func (x *Session) Set(key string, value string) {
 	}
 
 	x.Data[key] = value
-}
-
-func (x *Session) SetMID(mid uint32) {
-	x.Add(MIDKey, mid)
-}
-
-func (x *Session) GetMID() uint32 {
-	return uint32(x.GetUint(MIDKey))
 }
 
 func (x *Session) ImportAll(data map[string]string) {

@@ -17,11 +17,11 @@ type (
 		Enabled() bool         // 是否启用
 	}
 
+	// IApplication exposes the node-level service container shared by components.
 	IApplication interface {
 		INode
 		Running() bool                     // 是否运行中
 		DieChan() chan bool                // die chan
-		IsFrontend() bool                  // 是否为前端节点
 		Register(components ...IComponent) // 注册组件
 		Find(name string) IComponent       // 根据name获取组件对象
 		Remove(name string) IComponent     // 根据name移除组件对象
@@ -29,10 +29,11 @@ type (
 		OnShutdown(fn ...func())           // 关闭前执行的函数
 		Startup()                          // 启动应用实例
 		Shutdown()                         // 关闭应用实例
-		Serializer() ISerializer           // 序列化
+		BodyCodecs() IBodyCodecRegistry    // 协议体编解码器注册表
 		Discovery() IDiscovery             // 发现服务
 		Cluster() ICluster                 // 集群服务
 		ActorSystem() IActorSystem         // actor系统
+		Methods() IMethodTable             // actor方法表
 	}
 
 	// ProfileJSON profile配置文件读取接口

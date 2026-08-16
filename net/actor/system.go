@@ -1,52 +1,52 @@
 package cactor
 
 import (
+	"context"
+	"maps"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
-	ccode "github.com/actorgo-game/actorgo/ccode"
 	cutils "github.com/actorgo-game/actorgo/extend/utils"
 	cfacade "github.com/actorgo-game/actorgo/facade"
 	clog "github.com/actorgo-game/actorgo/logger"
 	cproto "github.com/actorgo-game/actorgo/net/proto"
-	cprofile "github.com/actorgo-game/actorgo/profile"
 )
 
 type (
 	// System Actor系统
+	// It owns top-level Actors and provides the common local/remote routing path.
 	System struct {
 		app              cfacade.IApplication
-		actorMap         *sync.Map          // key:actorID, value:*actor
-		actorEventMap    *sync.Map          // map[string]map[string]int64 => key:eventName, value:map[actorPath]uniqueID
-		localInvokeFunc  cfacade.InvokeFunc // default local func
-		remoteInvokeFunc cfacade.InvokeFunc // default remote func
-		wg               *sync.WaitGroup    // wait group
-		callTimeout      time.Duration      // call调用超时
-		arrivalTimeOut   int64              // message到达超时(毫秒)
-		executionTimeout int64              // 消息执行超时(毫秒)
+		actorMap         *sync.Map       // key:actorID, value:*actor
+		actorEventMap    *sync.Map       // map[string]map[string]int64 => key:eventName, value:map[actorPath]uniqueID
+		wg               *sync.WaitGroup // wait group
+		callTimeout      time.Duration   // call调用超时
+		messageSeq       atomic.Uint64   // 消息序列号
+		executionTimeout int64           // 消息执行超时(毫秒)
 	}
 )
 
+// NewSystem creates an unbound Actor system with default call and slow-call limits.
 func NewSystem() *System {
 	system := &System{
 		actorMap:         &sync.Map{},
 		actorEventMap:    &sync.Map{},
-		localInvokeFunc:  InvokeLocalFunc,
-		remoteInvokeFunc: InvokeRemoteFunc,
 		wg:               &sync.WaitGroup{},
 		callTimeout:      3 * time.Second,
-		arrivalTimeOut:   cprofile.ArrivalTimeOut(),
 		executionTimeout: 100,
 	}
 
 	return system
 }
 
+// SetApp binds application routing, codecs, discovery, and cluster services.
 func (p *System) SetApp(app cfacade.IApplication) {
 	p.app = app
 }
 
+// NodeID returns the bound application node ID.
 func (p *System) NodeID() string {
 	if p.app == nil {
 		return ""
@@ -55,6 +55,7 @@ func (p *System) NodeID() string {
 	return p.app.NodeID()
 }
 
+// Stop asks every top-level Actor to exit and waits for all parent and child loops.
 func (p *System) Stop() {
 	p.actorMap.Range(func(key, value any) bool {
 		actor, ok := value.(*Actor)
@@ -89,6 +90,7 @@ func (p *System) GetActor(id string) (*Actor, bool) {
 	return actor, found
 }
 
+// GetChildActor resolves a dynamic child below a top-level Actor.
 func (p *System) GetChildActor(actorID, childID string) (*Actor, bool) {
 	parentActor, found := p.GetActor(actorID)
 	if !found {
@@ -98,6 +100,7 @@ func (p *System) GetChildActor(actorID, childID string) (*Actor, bool) {
 	return parentActor.child.GetActor(childID)
 }
 
+// GetActorWithPath resolves either a top-level or child Actor path on this node.
 func (p *System) GetActorWithPath(path string) (*Actor, bool) {
 	actorPath, err := cfacade.ToActorPath(path)
 	if err != nil {
@@ -132,325 +135,329 @@ func (p *System) CreateActor(id string, handler cfacade.IActorHandler) (cfacade.
 	}
 
 	p.actorMap.Store(id, thisActor) // add to map
-	go thisActor.run()              // new actor is running!
+	p.wg.Add(1)
+	go thisActor.run() // new actor is running!
+	// Method registration happens in OnInit; do not expose the Actor until that
+	// initialization has completed successfully.
+	if err := <-thisActor.initDone; err != nil {
+		return nil, err
+	}
 
 	return thisActor, nil
 }
 
-// Call 发送远程消息(不回复)
-func (p *System) Call(source, target, funcName string, arg any) int32 {
-	if target == "" {
-		clog.Warn("[Call] Target path is nil. [source = %s, target = %s, funcName = %s]",
-			source,
-			target,
-			funcName,
-		)
-		return ccode.ActorPathIsNil
+// Invoke calls the local top-level Actor registered for methodID.
+func (p *System) Invoke(ctx *cfacade.RequestContext, methodID uint32, payload any) *cfacade.InvokeResult {
+	target, failure := p.methodTarget(methodID)
+	if failure != nil {
+		return failure
 	}
-
-	if len(funcName) < 1 {
-		clog.Warn("[Call] FuncName error. [source = %s, target = %s, funcName = %s]",
-			source,
-			target,
-			funcName,
-		)
-		return ccode.ActorFuncNameError
-	}
-
-	targetPath, err := cfacade.ToActorPath(target)
-	if err != nil {
-		clog.Warn("[Call] Target path error. [source = %s, target = %s, funcName = %s, err = %v]",
-			source,
-			target,
-			funcName,
-			err,
-		)
-		return ccode.ActorConvertPathError
-	}
-
-	if targetPath.NodeID != "" && targetPath.NodeID != p.NodeID() {
-		clusterPacket := cproto.GetClusterPacket()
-		clusterPacket.SourcePath = source
-		clusterPacket.TargetPath = target
-		clusterPacket.FuncName = funcName
-
-		if arg != nil {
-			argsBytes, err := p.app.Serializer().Marshal(arg)
-			if err != nil {
-				clog.Warn("[Call] Marshal arg error. [targetPath = %s, error = %s]",
-					target,
-					err,
-				)
-				return ccode.ActorMarshalError
-			}
-			clusterPacket.ArgBytes = argsBytes
-		}
-
-		err = p.app.Cluster().PublishRemote(targetPath.NodeID, clusterPacket)
-		if err != nil {
-			clog.Warn("[Call] Publish remote fail. [source = %s, target = %s, funcName = %s, err = %v]",
-				source,
-				target,
-				funcName,
-				err,
-			)
-			return ccode.ActorPublishRemoteError
-		}
-	} else {
-		remoteMsg := cfacade.GetMessage()
-		remoteMsg.Source = source
-		remoteMsg.Target = target
-		remoteMsg.FuncName = funcName
-		remoteMsg.Args = arg
-
-		if !p.PostRemote(remoteMsg) {
-			clog.Warn("[Call] Post remote fail. [source = %s, target = %s, funcName = %s]", source, target, funcName)
-			return ccode.ActorCallFail
-		}
-	}
-
-	return ccode.OK
+	return p.InvokeTarget(ctx, target, methodID, payload)
 }
 
-// CallWait 发送远程消息(等待回复)
-func (p *System) CallWait(source, target, funcName string, arg, reply any) int32 {
-	sourcePath, err := cfacade.ToActorPath(source)
-	if err != nil {
-		clog.Warn("[CallWait] Source path error. [source = %s, target = %s, funcName = %s, err = %v]",
-			source,
-			target,
-			funcName,
-			err,
-		)
-		return ccode.ActorConvertPathError
+// InvokeNode calls methodID on another node. The destination node resolves the
+// top-level Actor from its method table, so callers do not need an ActorPath.
+func (p *System) InvokeNode(ctx *cfacade.RequestContext, nodeID string, methodID uint32, payload any) *cfacade.InvokeResult {
+	if methodID == 0 {
+		return cfacade.ErrorResult(cproto.StatusCode_STATUS_INVALID_ARGUMENT, "method id is required")
 	}
-
-	targetPath, err := cfacade.ToActorPath(target)
-	if err != nil {
-		clog.Warn("[CallWait] Target path error. [source = %s, target = %s, funcName = %s, err = %v]",
-			source,
-			target,
-			funcName,
-			err,
-		)
-		return ccode.ActorConvertPathError
+	if nodeID == "" || nodeID == p.NodeID() {
+		return p.Invoke(ctx, methodID, payload)
 	}
+	ctx = ensureRequestContext(p.app, ctx)
+	return p.invokeRemote(ctx, "", nodeID, methodID, payload)
+}
 
-	if source == target {
-		clog.Warn("[CallWait] Source path is equal target. [source = %s, target = %s, funcName = %s]",
-			source,
-			target,
-			funcName,
-		)
-		return ccode.ActorSourceEqualTarget
+// InvokeTarget calls an explicit ActorPath. It is intended for dynamic child
+// Actors; ordinary top-level calls should use Invoke or InvokeNode.
+func (p *System) InvokeTarget(ctx *cfacade.RequestContext, target string, methodID uint32, payload any) *cfacade.InvokeResult {
+	targetPath, failure := p.prepareTyped(ctx, target, methodID)
+	if failure != nil {
+		return failure
 	}
-
-	if len(funcName) < 1 {
-		clog.Warn("[CallWait] FuncName error. [source = %s, target = %s, funcName = %s]",
-			source,
-			target,
-			funcName,
-		)
-		return ccode.ActorFuncNameError
-	}
-
+	ctx = ensureRequestContext(p.app, ctx)
 	// forward to remote actor
-	if targetPath.NodeID != "" && targetPath.NodeID != sourcePath.NodeID {
-		clusterPacket := cproto.BuildClusterPacket(source, target, funcName)
-
-		if arg != nil {
-			argsBytes, err := p.app.Serializer().Marshal(arg)
-			if err != nil {
-				clog.Warn("[CallWait] Marshal arg error. [targetPath = %s, error = %s]", target, err)
-				return ccode.ActorMarshalError
-			}
-			clusterPacket.ArgBytes = argsBytes
+	if targetPath.NodeID != "" && targetPath.NodeID != p.NodeID() {
+		return p.invokeRemote(ctx, target, targetPath.NodeID, methodID, payload)
+	}
+	// Local child: deliver directly to the child mailbox so a parent handler
+	// waiting on InvokeChild cannot deadlock on itself.
+	if targetPath.IsChild() {
+		parent, found := p.GetActor(targetPath.ActorID)
+		if !found {
+			return cfacade.ErrorResult(cproto.StatusCode_STATUS_NOT_FOUND, "actor not found")
 		}
-
-		rspData, rspCode := p.app.Cluster().RequestRemote(targetPath.NodeID, clusterPacket, p.callTimeout)
-		if ccode.IsFail(rspCode) {
-			return rspCode
-		}
-
-		if reply != nil {
-			if err = p.app.Serializer().Unmarshal(rspData, reply); err != nil {
-				clog.Warn("[CallWait] Marshal reply error. [targetPath = %s, error = %s]", target, err)
-				return ccode.ActorMarshalError
-			}
-		}
-
-	} else {
-		message := cfacade.GetMessage()
-		message.Source = source
-		message.Target = target
-		message.FuncName = funcName
-		message.Args = arg
-		message.ChanResult = make(chan any)
-
-		var result any
-
-		if sourcePath.ActorID == targetPath.ActorID {
-			if sourcePath.ChildID == targetPath.ChildID {
-				return ccode.ActorSourceEqualTarget
-			}
-
-			childActor, found := p.GetChildActor(targetPath.ActorID, targetPath.ChildID)
-			if !found {
-				return ccode.ActorChildIDNotFound
-			}
-
-			childActor.PostRemote(message)
-		} else {
-			if !p.PostRemote(message) {
-				clog.Warn("[CallWait] Post remote fail. [source = %s, target = %s, funcName = %s]",
-					source,
-					target,
-					funcName,
-				)
-				return ccode.ActorCallFail
-			}
-		}
-
-		timer := time.NewTimer(p.callTimeout)
-		defer timer.Stop()
-
-		select {
-		case result = <-message.ChanResult:
-			{
-				if result == nil {
-					clog.Warn("[CallWait] Response is nil. [source = %s, target = %s, funcName = %s]",
-						source,
-						target,
-						funcName,
-					)
-					return ccode.ActorCallFail
-				}
-
-				rsp := result.(*cproto.Response)
-				if rsp == nil {
-					clog.Warn("[CallWait] Response is nil. [source = %s, target = %s, funcName = %s]",
-						source,
-						target,
-						funcName,
-					)
-					return ccode.ActorCallFail
-				}
-
-				if ccode.IsFail(rsp.Code) {
-					return rsp.Code
-				}
-
-				if reply != nil {
-					if rsp.Data == nil {
-						clog.Warn("[CallWait] rsp.Data is nil.[source = %s, target = %s, funcName = %s, error = %s]",
-							source,
-							target,
-							funcName,
-							err,
-						)
-					}
-
-					err = p.app.Serializer().Unmarshal(rsp.Data, reply)
-					if err != nil {
-						clog.Warn("[CallWait] Unmarshal reply error.[source = %s, target = %s, funcName = %s, error = %s]",
-							source,
-							target,
-							funcName,
-							err,
-						)
-						return ccode.ActorUnmarshalError
-					}
-				}
-			}
-		case <-timer.C:
-			return ccode.ActorCallTimeout
-		}
+		return parent.InvokeChild(ctx, targetPath.ChildID, methodID, payload)
 	}
 
-	return ccode.OK
+	invokeCtx, cancel, failure := p.newInvokeContext(ctx)
+	if failure != nil {
+		return failure
+	}
+	defer cancel()
+	message := typedMessage(invokeCtx, target, methodID, payload)
+	resultCh := make(chan *cfacade.InvokeResult, 1)
+	message.ChanInvokeResult = resultCh
+	if !p.post(message) {
+		message.Recycle()
+		return cfacade.ErrorResult(cproto.StatusCode_STATUS_NOT_FOUND, "actor not found")
+	}
+
+	select {
+	case result := <-resultCh:
+		return result
+	case <-invokeCtx.Done():
+		return contextFailure(invokeCtx.Err(), "actor invoke")
+	}
 }
 
-// Broadcast 根据节点类型发布消息
-func (p *System) CallType(nodeType, actorID, funcName string, arg any) int32 {
-	if actorID == "" {
-		return ccode.ActorIDIsNil
+// Notify sends a one-way message to the local top-level Actor registered for
+// methodID.
+func (p *System) Notify(ctx *cfacade.RequestContext, methodID uint32, payload any) *cfacade.InvokeResult {
+	target, failure := p.methodTarget(methodID)
+	if failure != nil {
+		return failure
 	}
+	return p.NotifyTarget(ctx, target, methodID, payload)
+}
 
-	if len(funcName) < 1 {
-		clog.Warn("[CallType] FuncName error. [nodeType = %s, actorID = %s, funcName = %s]",
-			nodeType,
-			actorID,
-			funcName,
-		)
-		return ccode.ActorFuncNameError
+// NotifyNode sends methodID to another node without exposing its ActorPath.
+func (p *System) NotifyNode(ctx *cfacade.RequestContext, nodeID string, methodID uint32, payload any) *cfacade.InvokeResult {
+	if methodID == 0 {
+		return cfacade.ErrorResult(cproto.StatusCode_STATUS_INVALID_ARGUMENT, "method id is required")
 	}
+	if nodeID == "" || nodeID == p.NodeID() {
+		return p.Notify(ctx, methodID, payload)
+	}
+	ctx = ensureRequestContext(p.app, ctx)
+	return p.notifyRemote(ctx, "", nodeID, methodID, payload)
+}
 
-	clusterPacket := cproto.GetClusterPacket()
-	clusterPacket.TargetPath = cfacade.NewPath("", actorID)
-	clusterPacket.FuncName = funcName
-
-	if arg != nil {
-		argsBytes, err := p.app.Serializer().Marshal(arg)
-		if err != nil {
-			clog.Warn("[CallType] Marshal arg error. [nodeType = %s, actorID = %s, funcName = %s, error = %s]",
-				nodeType,
-				actorID,
-				funcName,
-				err,
-			)
-			return ccode.ActorMarshalError
+// NotifyTarget sends to an explicit ActorPath and is primarily used by dynamic
+// child Actors.
+func (p *System) NotifyTarget(ctx *cfacade.RequestContext, target string, methodID uint32, payload any) *cfacade.InvokeResult {
+	targetPath, failure := p.prepareTyped(ctx, target, methodID)
+	if failure != nil {
+		return failure
+	}
+	ctx = ensureRequestContext(p.app, ctx)
+	if targetPath.NodeID != "" && targetPath.NodeID != p.NodeID() {
+		return p.notifyRemote(ctx, target, targetPath.NodeID, methodID, payload)
+	}
+	if targetPath.IsChild() {
+		parent, found := p.GetActor(targetPath.ActorID)
+		if !found {
+			return cfacade.ErrorResult(cproto.StatusCode_STATUS_NOT_FOUND, "actor not found")
 		}
-		clusterPacket.ArgBytes = argsBytes
+		return parent.NotifyChild(ctx, targetPath.ChildID, methodID, payload)
 	}
+	notifyCtx, cancel, failure := p.newNotifyContext(ctx)
+	if failure != nil {
+		return failure
+	}
+	message := typedMessage(notifyCtx, target, methodID, payload)
+	message.Cancel = cancel
+	if !p.post(message) {
+		message.Recycle()
+		return cfacade.ErrorResult(cproto.StatusCode_STATUS_NOT_FOUND, "actor not found")
+	}
+	return cfacade.OKResult(nil)
+}
 
-	err := p.app.Cluster().PublishRemoteType(nodeType, clusterPacket)
+func (p *System) methodTarget(methodID uint32) (string, *cfacade.InvokeResult) {
+	if methodID == 0 {
+		return "", cfacade.ErrorResult(cproto.StatusCode_STATUS_INVALID_ARGUMENT, "method id is required")
+	}
+	if p.app == nil || p.app.Methods() == nil {
+		return "", cfacade.ErrorResult(cproto.StatusCode_STATUS_UNAVAILABLE, "method table is not initialized")
+	}
+	target, found := p.app.Methods().Target(methodID)
+	if !found {
+		return "", cfacade.ErrorResult(cproto.StatusCode_STATUS_NOT_FOUND, "top-level actor method not found")
+	}
+	return target, nil
+}
+
+func (p *System) prepareTyped(_ *cfacade.RequestContext, target string, methodID uint32) (*cfacade.ActorPath, *cfacade.InvokeResult) {
+	if methodID == 0 {
+		return nil, cfacade.ErrorResult(cproto.StatusCode_STATUS_INVALID_ARGUMENT, "method id is required")
+	}
+	targetPath, err := cfacade.ToActorPath(target)
 	if err != nil {
-		clog.Warn("[CallType] Publish remote fail. [nodeType = %s, actorID = %s, funcName = %s, error = %v]",
-			nodeType,
-			actorID,
-			funcName,
-			err,
-		)
-		return ccode.ActorPublishRemoteError
+		return nil, cfacade.ErrorResult(cproto.StatusCode_STATUS_INVALID_ARGUMENT, "invalid actor target")
 	}
-
-	return ccode.OK
+	return targetPath, nil
 }
 
-// PostRemote 提交远程消息
-func (p *System) PostRemote(m *cfacade.Message) bool {
+func (p *System) invokeRemote(ctx *cfacade.RequestContext, target, nodeID string, methodID uint32, payload any) *cfacade.InvokeResult {
+	if p.app.Cluster() == nil {
+		return cfacade.ErrorResult(cproto.StatusCode_STATUS_UNAVAILABLE, "cluster is not configured")
+	}
+	ctx, cancel, failure := p.newInvokeContext(ctx)
+	if failure != nil {
+		return failure
+	}
+	defer cancel()
+	body, err := encodeClusterPayload(p.app, ctx, payload)
+	if err != nil {
+		return cfacade.ErrorResult(cproto.StatusCode_STATUS_INTERNAL, "cluster request body encode failed")
+	}
+	message := p.buildClusterMessage(ctx, target, methodID, cproto.MsgType_REQUEST, body)
+	deadline, _ := ctx.Deadline()
+	timeout := time.Until(deadline)
+	if timeout <= 0 {
+		return cfacade.ErrorResult(cproto.StatusCode_STATUS_DEADLINE_EXCEEDED, "cluster request deadline exceeded")
+	}
+	response, err := p.app.Cluster().Request(nodeID, message, timeout)
+	if err != nil {
+		if ctx.Err() != nil {
+			return contextFailure(ctx.Err(), "cluster request")
+		}
+		return cfacade.ErrorResult(cproto.StatusCode_STATUS_UNAVAILABLE, err.Error())
+	}
+	return &cfacade.InvokeResult{Payload: response.Payload, Code: response.Code, Message: response.Message}
+}
+
+func (p *System) notifyRemote(ctx *cfacade.RequestContext, target, nodeID string, methodID uint32, payload any) *cfacade.InvokeResult {
+	if p.app.Cluster() == nil {
+		return cfacade.ErrorResult(cproto.StatusCode_STATUS_UNAVAILABLE, "cluster is not configured")
+	}
+	ctx, cancel, failure := p.newNotifyContext(ctx)
+	if failure != nil {
+		return failure
+	}
+	defer cancel()
+	body, err := encodeClusterPayload(p.app, ctx, payload)
+	if err != nil {
+		return cfacade.ErrorResult(cproto.StatusCode_STATUS_INTERNAL, "cluster notify body encode failed")
+	}
+	if err := p.app.Cluster().Publish(nodeID, p.buildClusterMessage(ctx, target, methodID, cproto.MsgType_NOTIFY, body)); err != nil {
+		return cfacade.ErrorResult(cproto.StatusCode_STATUS_UNAVAILABLE, err.Error())
+	}
+	return cfacade.OKResult(nil)
+}
+
+// buildClusterMessage copies the request boundary needed to preserve correlation,
+// codec, deadline, metadata, and session identity across a cluster hop.
+func (p *System) buildClusterMessage(ctx *cfacade.RequestContext, target string, methodID uint32, msgType cproto.MsgType, body []byte) *cproto.ClusterMessage {
+	// Clone mutable context data because the message may outlive the caller
+	// while it is serialized or published by the cluster implementation.
+	message := &cproto.ClusterMessage{
+		MessageId: p.messageSeq.Add(1), MsgType: msgType, RequestId: ctx.RequestID, MethodId: methodID,
+		TargetPath: target, Metadata: cloneBytesMap(ctx.Metadata),
+		Codec: ctx.Codec, Payload: body,
+	}
+	if deadline, ok := ctx.Context.Deadline(); ok {
+		message.DeadlineUnixMs = deadline.UnixMilli()
+	}
+	if ctx.Session != nil {
+		message.Session = &cproto.Session{Sid: ctx.Session.Sid, Uid: ctx.Session.Uid, Ip: ctx.Session.Ip, Data: maps.Clone(ctx.Session.Data)}
+	}
+	return message
+}
+
+// encodeClusterPayload preserves raw transport bytes and encodes typed local values.
+func encodeClusterPayload(app cfacade.IApplication, ctx *cfacade.RequestContext, payload any) ([]byte, error) {
+	if body, ok := payload.([]byte); ok {
+		return body, nil
+	}
+	return app.BodyCodecs().Marshal(ctx.Codec, payload)
+}
+
+// ensureRequestContext supplies defaults without replacing caller-owned context state.
+func ensureRequestContext(app cfacade.IApplication, ctx *cfacade.RequestContext) *cfacade.RequestContext {
+	if ctx == nil {
+		ctx = cfacade.NewRequestContext(context.Background())
+	}
+	if ctx.Context == nil {
+		ctx.Context = context.Background()
+	}
+	if ctx.Codec == 0 {
+		ctx.Codec = app.BodyCodecs().Default()
+	}
+	return ctx
+}
+
+// newInvokeContext gives every queued request a real deadline. Cancelling the
+// caller therefore also marks a message that is still waiting in the mailbox.
+func (p *System) newInvokeContext(source *cfacade.RequestContext) (*cfacade.RequestContext, context.CancelFunc, *cfacade.InvokeResult) {
+	source = ensureRequestContext(p.app, source)
+	if err := source.Err(); err != nil {
+		return nil, nil, contextFailure(err, "actor invoke")
+	}
+	if _, ok := source.Deadline(); ok {
+		ctx, cancel := context.WithCancel(source.Context)
+		return source.Clone(ctx), cancel, nil
+	}
+	ctx, cancel := context.WithTimeout(source.Context, p.callTimeout)
+	return source.Clone(ctx), cancel, nil
+}
+
+// newNotifyContext detaches one-way work from the ingress cancellation while
+// retaining its deadline. The Actor cancels this context after handling it.
+func (p *System) newNotifyContext(source *cfacade.RequestContext) (*cfacade.RequestContext, context.CancelFunc, *cfacade.InvokeResult) {
+	source = ensureRequestContext(p.app, source)
+	if err := source.Err(); err != nil {
+		return nil, nil, contextFailure(err, "actor notify")
+	}
+	parent := context.WithoutCancel(source.Context)
+	if deadline, ok := source.Deadline(); ok {
+		ctx, cancel := context.WithDeadline(parent, deadline)
+		return source.Clone(ctx), cancel, nil
+	}
+	ctx, cancel := context.WithTimeout(parent, p.callTimeout)
+	return source.Clone(ctx), cancel, nil
+}
+
+func contextFailure(err error, operation string) *cfacade.InvokeResult {
+	if err == context.DeadlineExceeded {
+		return cfacade.ErrorResult(cproto.StatusCode_STATUS_DEADLINE_EXCEEDED, operation+" deadline exceeded")
+	}
+	return cfacade.ErrorResult(cproto.StatusCode_STATUS_CANCELLED, operation+" cancelled")
+}
+
+// typedMessage acquires and fills the pooled message used by all Actor entry points.
+func typedMessage(ctx *cfacade.RequestContext, target string, methodID uint32, payload any) *cfacade.Message {
+	message := cfacade.GetMessage()
+	message.MethodID = methodID
+	message.Target, message.Context, message.Payload = target, ctx, payload
+	return message
+}
+
+// cloneBytesMap prevents mutable metadata from being shared across asynchronous calls.
+func cloneBytesMap(source map[string][]byte) map[string][]byte {
+	if len(source) == 0 {
+		return nil
+	}
+	target := make(map[string][]byte, len(source))
+	for key, value := range source {
+		target[key] = append([]byte(nil), value...)
+	}
+	return target
+}
+
+// post delivers a typed message to the target Actor mailbox.
+func (p *System) post(m *cfacade.Message) bool {
 	if m == nil {
 		clog.Error("Message is nil.")
 		return false
 	}
 
-	if targetActor, found := p.GetActor(m.TargetPath().ActorID); found {
-		if targetActor.state == WorkerState {
-			targetActor.PostRemote(m)
-		}
-		return true
+	targetPath := m.TargetPath()
+	if targetPath == nil {
+		clog.Error("Message target is invalid. [target = %s]", m.Target)
+		return false
 	}
-
-	clog.Warn("[PostRemote] actor not found. [source = %s, target = %s -> %s]", m.Source, m.Target, m.FuncName)
-	return false
-}
-
-// PostLocal 提交本地消息
-func (p *System) PostLocal(m *cfacade.Message) bool {
-	if m == nil {
-		clog.Error("Message is nil.")
+	if targetActor, found := p.GetActor(targetPath.ActorID); found {
+		state := targetActor.State()
+		if state == InitState || state == WorkerState {
+			targetActor.post(m)
+			return true
+		}
 		return false
 	}
 
-	if targetActor, found := p.GetActor(m.TargetPath().ActorID); found {
-		if targetActor.state == WorkerState {
-			targetActor.PostLocal(m)
-		}
-		return true
-	}
-
-	clog.Warn("[PostLocal] actor not found. [source = %s, target = %s -> %s]", m.Source, m.Target, m.FuncName)
-
+	clog.Warn("[Post] actor not found. [target = %s, methodID = %d]", m.Target, m.MethodID)
 	return false
 }
 
@@ -486,7 +493,7 @@ func (p *System) PostEvent(data cfacade.IEventData) {
 
 		// no set unique
 		if value == nil {
-			if targetActor.state == WorkerState {
+			if targetActor.State() == WorkerState {
 				targetActor.event.Push(data)
 			}
 
@@ -500,7 +507,7 @@ func (p *System) PostEvent(data cfacade.IEventData) {
 		}
 
 		if uniqueID == data.UniqueID() {
-			if targetActor.state == WorkerState {
+			if targetActor.State() == WorkerState {
 				targetActor.event.Push(data)
 			}
 
@@ -511,28 +518,12 @@ func (p *System) PostEvent(data cfacade.IEventData) {
 	})
 }
 
-func (p *System) SetLocalInvoke(fn cfacade.InvokeFunc) {
-	if fn != nil {
-		p.localInvokeFunc = fn
-	}
-}
-
-func (p *System) SetRemoteInvoke(fn cfacade.InvokeFunc) {
-	if fn != nil {
-		p.remoteInvokeFunc = fn
-	}
-}
-
+// SetCallTimeout sets the default end-to-end deadline when the caller supplies none.
 func (p *System) SetCallTimeout(d time.Duration) {
 	p.callTimeout = d
 }
 
-func (p *System) SetArrivalTimeout(t int64) {
-	if t > 1 {
-		p.arrivalTimeOut = t
-	}
-}
-
+// SetExecutionTimeout sets the slow-handler warning threshold in milliseconds.
 func (p *System) SetExecutionTimeout(t int64) {
 	if t > 1 {
 		p.executionTimeout = t

@@ -133,7 +133,6 @@ func (p *Connect) initReplySubscribe() {
 			case ch <- msg:
 			default:
 			}
-			close(ch)
 		}
 	})
 
@@ -174,7 +173,6 @@ func (p *Connect) RequestSync(subject string, data []byte, tod ...time.Duration)
 
 	if err != nil {
 		p.waiters.Delete(reqID)
-		close(ch)
 		return nil, err
 	}
 
@@ -190,22 +188,28 @@ func (p *Connect) RequestSync(subject string, data []byte, tod ...time.Duration)
 	case <-timer.C:
 		p.waiters.Delete(reqID)
 		clog.Warn("id = %d, reqID = %s", p.id, reqID)
-		close(ch)
 		return nil, cerror.ClusterRequestTimeout
 	}
 }
 
 func (p *Connect) Subscribe(subject string, cb nats.MsgHandler) error {
+	_, err := p.SubscribeHandle(subject, cb)
+	return err
+}
+
+// SubscribeHandle registers a subscription and returns it to callers that need
+// to stop intake before shutting down their own workers.
+func (p *Connect) SubscribeHandle(subject string, cb nats.MsgHandler) (*nats.Subscription, error) {
 	sub, err := p.Conn.Subscribe(subject, cb)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if sub != nil {
 		p.subs = append(p.subs, sub)
 	}
 
-	return nil
+	return sub, nil
 }
 
 func (p *Connect) QueueSubscribe(subject, queue string, cb nats.MsgHandler) error {

@@ -2,79 +2,154 @@ package cconnector
 
 import (
 	"crypto/tls"
+	"errors"
 	"net"
+	"sync"
+	"sync/atomic"
 
 	cfacade "github.com/actorgo-game/actorgo/facade"
 	clog "github.com/actorgo-game/actorgo/logger"
 )
 
-type (
-	Connector struct {
-		listener      net.Listener
-		onConnectFunc cfacade.OnConnectFunc
-		connChan      chan net.Conn
-		running       bool
-	}
-)
+// Connector serializes accepted sockets onto one connection callback and
+// coordinates idempotent listener shutdown.
+type Connector struct {
+	listener      net.Listener
+	onConnectFunc cfacade.OnConnectFunc
+	connChan      chan net.Conn
+	done          chan struct{}
+	running       int32
+	stopped       uint32
+	startOnce     sync.Once
+	handoffMu     sync.Mutex
+	handoffWG     sync.WaitGroup
+	dispatchWG    sync.WaitGroup
+}
 
-func NewConnector(size int) Connector {
-	connector := Connector{
-		connChan: make(chan net.Conn, size),
-		running:  true,
-	}
+// NewConnector creates a running connector with a bounded accept queue.
+func NewConnector(size int) *Connector {
+	connector := &Connector{connChan: make(chan net.Conn, size), done: make(chan struct{})}
+	atomic.StoreInt32(&connector.running, 1)
 	return connector
 }
 
-func (p *Connector) OnConnect(fn cfacade.OnConnectFunc) {
+// OnConnect installs the callback that receives accepted sockets.
+func (c *Connector) OnConnect(fn cfacade.OnConnectFunc) {
 	if fn != nil {
-		p.onConnectFunc = fn
+		c.onConnectFunc = fn
 	}
 }
 
-func (p *Connector) InChan(conn net.Conn) {
-	p.connChan <- conn
+// InChan hands an accepted socket to the dispatcher or closes it during shutdown.
+func (c *Connector) InChan(conn net.Conn) {
+	if conn == nil {
+		return
+	}
+	c.handoffMu.Lock()
+	if atomic.LoadUint32(&c.stopped) != 0 {
+		c.handoffMu.Unlock()
+		_ = conn.Close()
+		return
+	}
+	c.handoffWG.Add(1)
+	c.handoffMu.Unlock()
+	defer c.handoffWG.Done()
+	select {
+	case c.connChan <- conn:
+	case <-c.done:
+		// Stop may race with Accept; close sockets that can no longer be handed off.
+		_ = conn.Close()
+	}
 }
 
-func (p *Connector) Start() {
-	if p.onConnectFunc == nil {
-		panic("onConnectFunc is nil.")
+// Start launches the connection callback dispatcher.
+func (c *Connector) Start() {
+	if c.onConnectFunc == nil {
+		panic("onConnectFunc is nil")
 	}
-
-	go func() {
-		for conn := range p.connChan {
-			p.onConnectFunc(conn)
+	c.startOnce.Do(func() {
+		c.handoffMu.Lock()
+		if atomic.LoadUint32(&c.stopped) != 0 {
+			c.handoffMu.Unlock()
+			return
 		}
-	}()
+		c.dispatchWG.Add(1)
+		c.handoffMu.Unlock()
+		go c.dispatch()
+	})
 }
 
-func (p *Connector) Stop() {
-	p.running = false
-
-	if err := p.listener.Close(); err != nil {
-		clog.Error("Failed to stop: %s", err)
+func (c *Connector) dispatch() {
+	defer c.dispatchWG.Done()
+	for {
+		// Prefer shutdown over a queued socket when both cases are ready.
+		select {
+		case <-c.done:
+			return
+		default:
+		}
+		select {
+		case <-c.done:
+			return
+		case conn := <-c.connChan:
+			if conn == nil {
+				continue
+			}
+			if atomic.LoadUint32(&c.stopped) != 0 {
+				_ = conn.Close()
+				continue
+			}
+			c.onConnectFunc(conn)
+		}
 	}
 }
 
-func (p *Connector) Running() bool {
-	return p.running
+func (c *Connector) closeQueued() {
+	for {
+		select {
+		case conn := <-c.connChan:
+			if conn != nil {
+				_ = conn.Close()
+			}
+		default:
+			return
+		}
+	}
 }
 
-func (p *Connector) GetListener(certFile, keyFile, address string) (net.Listener, error) {
+// Stop is idempotent and unblocks both the accept loop and connection dispatcher.
+func (c *Connector) Stop() {
+	if !atomic.CompareAndSwapUint32(&c.stopped, 0, 1) {
+		return
+	}
+	atomic.StoreInt32(&c.running, 0)
+	c.handoffMu.Lock()
+	close(c.done)
+	c.handoffMu.Unlock()
+	if c.listener != nil {
+		if err := c.listener.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
+			clog.Error("Failed to stop: %s", err)
+		}
+	}
+	c.handoffWG.Wait()
+	c.dispatchWG.Wait()
+	c.closeQueued()
+}
+
+// Running reports whether the connector still accepts sockets.
+func (c *Connector) Running() bool { return atomic.LoadInt32(&c.running) == 1 }
+
+// GetListener creates a TCP or TLS listener and keeps it for coordinated shutdown.
+func (c *Connector) GetListener(certFile, keyFile, address string) (net.Listener, error) {
 	var err error
 	if certFile == "" || keyFile == "" {
-		p.listener, err = net.Listen("tcp", address)
-		return p.listener, err
+		c.listener, err = net.Listen("tcp", address)
+		return c.listener, err
 	}
-
 	crt, err := tls.LoadX509KeyPair(certFile, keyFile)
 	if err != nil {
-		clog.Fatal("failed to listen: %s", err.Error())
+		return nil, err
 	}
-
-	tlsCfg := &tls.Config{
-		Certificates: []tls.Certificate{crt},
-	}
-
-	p.listener, err = tls.Listen("tcp", address, tlsCfg)
-	return p.listener, err
+	c.listener, err = tls.Listen("tcp", address, &tls.Config{Certificates: []tls.Certificate{crt}, MinVersion: tls.VersionTLS12})
+	return c.listener, err
 }

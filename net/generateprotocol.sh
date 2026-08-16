@@ -1,4 +1,5 @@
 #!/bin/sh
 
-cd proto
-protoc --go_out=. --go_opt=paths=source_relative *.proto
+set -eu
+cd "$(dirname "$0")/.."
+protoc -I . --go_out=. --go_opt=paths=source_relative net/proto/*.proto

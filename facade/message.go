@@ -1,122 +1,74 @@
 package cfacade
 
 import (
+	"context"
 	"strings"
 	"sync"
 
 	cconst "github.com/actorgo-game/actorgo/const"
 	cerr "github.com/actorgo-game/actorgo/error"
 	cstring "github.com/actorgo-game/actorgo/extend/string"
-	ctime "github.com/actorgo-game/actorgo/extend/time"
-	cproto "github.com/actorgo-game/actorgo/net/proto"
-	"github.com/nats-io/nats.go"
 )
 
-type (
-	Message struct {
-		BuildTime  int64           // message build time(ms)
-		PostTime   int64           // post to actor time(ms)
-		Source     string          // 来源actor path
-		Target     string          // 目标actor path
-		targetPath *ActorPath      // 目标actor path对象
-		FuncName   string          // 请求调用的函数名
-		Session    *cproto.Session // session of gateway
-		Args       any             // 请求的参数
-		Header     nats.Header     // nats.Msg Header
-		Reply      string          // nats.Msg reply subject
-		IsCluster  bool            // 是否为集群消息
-		ChanResult chan any        //
+// Message is the pooled internal delivery unit shared by local, HTTP/AGP, and
+// cluster entry points. Its final consumer must call Recycle exactly once.
+type Message struct {
+	MethodID         uint32             // 请求调用的方法id
+	Target           string             // 目标actor path
+	targetPath       *ActorPath         // 目标actor path对象
+	Context          *RequestContext    // 请求上下文
+	Payload          any                // 请求的参数
+	ChanInvokeResult chan *InvokeResult // 请求结果通道
+	Cancel           context.CancelFunc // 释放 Actor 持有的通知上下文
+}
+
+// ActorPath identifies a top-level Actor or one of its dynamic children.
+// ActorPath = NodeID . ActorID
+// ActorPath = NodeID . ActorID . ChildID
+// A generated NodeID itself contains four dot-separated numeric segments.
+type ActorPath struct {
+	NodeID  string
+	ActorID string
+	ChildID string
+}
+
+var messagePool = sync.Pool{New: func() any { return &Message{} }}
+
+// GetMessage acquires a cleared delivery message from the shared pool.
+func GetMessage() *Message { return messagePool.Get().(*Message) }
+
+// Recycle releases the message-owned context and clears references before reuse.
+func (m *Message) Recycle() {
+	if m.Cancel != nil {
+		m.Cancel()
 	}
+	m.MethodID = 0
+	m.Target = ""
+	m.targetPath, m.Context = nil, nil
+	m.Payload, m.ChanInvokeResult, m.Cancel = nil, nil, nil
+	messagePool.Put(m)
+}
 
-	// ActorPath = NodeID . ActorID
-	// ActorPath = NodeID . ActorID . ChildID
-	ActorPath struct {
-		NodeID  string
-		ActorID string
-		ChildID string
+// TargetPath parses Target once and caches the result for Actor routing.
+func (m *Message) TargetPath() *ActorPath {
+	if m.targetPath == nil {
+		m.targetPath, _ = ToActorPath(m.Target)
 	}
-)
-
-var messagePool = sync.Pool{
-	New: func() any {
-		return &Message{}
-	},
+	return m.targetPath
 }
+func (p *ActorPath) IsChild() bool  { return p != nil && p.ChildID != "" }
+func (p *ActorPath) IsParent() bool { return p != nil && p.ChildID == "" }
 
-func GetMessage() *Message {
-	msg := messagePool.Get().(*Message)
-	msg.BuildTime = ctime.Now().ToMillisecond()
-	return msg
-}
-
-func BuildClusterMessage(packet *cproto.ClusterPacket) *Message {
-	msg := messagePool.Get().(*Message)
-	msg.BuildTime = packet.BuildTime
-	msg.Source = packet.SourcePath
-	msg.Target = packet.TargetPath
-	msg.FuncName = packet.FuncName
-	msg.IsCluster = true
-	msg.Session = packet.Session
-	msg.Args = packet.ArgBytes
-	return msg
-}
-
-func (p *Message) Recycle() {
-	p.BuildTime = 0
-	p.PostTime = 0
-	p.Source = ""
-	p.Target = ""
-	p.targetPath = nil
-	p.FuncName = ""
-	p.Session = nil
-	p.Args = nil
-	p.Header = nil
-	p.Reply = ""
-	p.ChanResult = nil
-	p.IsCluster = false
-	messagePool.Put(p)
-}
-
-func (p *Message) TargetPath() *ActorPath {
-	if p.targetPath == nil {
-		p.targetPath, _ = ToActorPath(p.Target)
-	}
-	return p.targetPath
-}
-
-func (p *Message) IsReply() bool {
-	return p.Reply != ""
-}
-
-func (p *Message) Destory() {
-	p.targetPath = nil
-	p.Session = nil
-	p.Args = nil
-	p.Header = nil
-	p.ChanResult = nil
-}
-
-func (p *ActorPath) IsChild() bool {
-	return p.ChildID != ""
-}
-
-func (p *ActorPath) IsParent() bool {
-	return p.ChildID == ""
-}
-
+// String formats the path accepted by ToActorPath.
 // String
-func (p *ActorPath) String() string {
-	return NewChildPath(p.NodeID, p.ActorID, p.ChildID)
-}
+func (p *ActorPath) String() string { return NewChildPath(p.NodeID, p.ActorID, p.ChildID) }
 
+// NewActorPath constructs a parsed Actor path without validating its parts.
 func NewActorPath(nodeID, actorID, childID string) *ActorPath {
-	return &ActorPath{
-		NodeID:  nodeID,
-		ActorID: actorID,
-		ChildID: childID,
-	}
+	return &ActorPath{NodeID: nodeID, ActorID: actorID, ChildID: childID}
 }
 
+// NewChildPath formats either a parent path or a child path when childID is set.
 func NewChildPath(nodeID, actorID, childID any) string {
 	if childID == "" {
 		return NewPath(nodeID, actorID)
@@ -124,25 +76,28 @@ func NewChildPath(nodeID, actorID, childID any) string {
 	return cstring.ToString(nodeID) + cconst.DOT + cstring.ToString(actorID) + cconst.DOT + cstring.ToString(childID)
 }
 
+// NewPath formats a top-level Actor path.
 func NewPath(nodeID, actorID any) string {
 	return cstring.ToString(nodeID) + cconst.DOT + cstring.ToString(actorID)
 }
 
+// ToActorPath accepts both short node IDs and generated four-segment node IDs.
 func ToActorPath(path string) (*ActorPath, error) {
 	if path == "" {
 		return nil, cerr.ActorPathError
 	}
-
-	p := strings.Split(path, cconst.DOT)
-	pLen := len(p)
-
-	if pLen == 2 {
-		return NewActorPath(p[0], p[1], ""), nil
+	parts := strings.Split(path, cconst.DOT)
+	if len(parts) == 2 {
+		return NewActorPath(parts[0], parts[1], ""), nil
 	}
-
-	if len(p) == 3 {
-		return NewActorPath(p[0], p[1], p[2]), nil
+	if len(parts) == 3 {
+		return NewActorPath(parts[0], parts[1], parts[2]), nil
 	}
-
+	if len(parts) == 5 {
+		return NewActorPath(strings.Join(parts[:4], cconst.DOT), parts[4], ""), nil
+	}
+	if len(parts) == 6 {
+		return NewActorPath(strings.Join(parts[:4], cconst.DOT), parts[4], parts[5]), nil
+	}
 	return nil, cerr.ActorPathError
 }

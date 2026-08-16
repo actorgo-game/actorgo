@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"time"
 
-	cstring "github.com/actorgo-game/actorgo/extend/string"
 	cfacade "github.com/actorgo-game/actorgo/facade"
 	clog "github.com/actorgo-game/actorgo/logger"
 	cnats "github.com/actorgo-game/actorgo/net/nats"
@@ -12,6 +11,7 @@ import (
 	cprofile "github.com/actorgo-game/actorgo/profile"
 
 	"github.com/nats-io/nats.go"
+	"google.golang.org/protobuf/proto"
 )
 
 // DiscoveryNats master节点模式(master为单节点)
@@ -76,7 +76,7 @@ func (m *DiscoveryNats) loadMember() {
 		Settings: make(map[string]string),
 	}
 
-	memberBytes, err := m.app.Serializer().Marshal(m.thisMember)
+	memberBytes, err := m.marshal(m.thisMember)
 	if err != nil {
 		clog.Warn("err = %s", err)
 		return
@@ -91,21 +91,23 @@ func (m *DiscoveryNats) loadMember() {
 	}
 
 	// get master node id
-	masterId := config.GetString("master_node_id")
-	if masterId == "" {
+	masterIDText := config.GetString("master_node_id")
+	if masterIDText == "" {
 		clog.Error("master node id not in config.")
 	}
 
-	masterType := cstring.ToString(cfacade.GetNodeType(cstring.ToUint64D(masterId)))
-	if masterType == "" {
-		clog.Error("master node type not in config.")
+	masterNodeID, err := cfacade.GenNodeIdByStr(masterIDText)
+	if err != nil {
+		panic(fmt.Errorf("invalid master node id %q: %w", masterIDText, err))
 	}
-	clog.Info("master masterId[%s] masterType[%s]", masterId, masterType)
+	masterID := fmt.Sprint(masterNodeID)
+	masterType := fmt.Sprint(cfacade.GetNodeType(masterNodeID))
+	clog.Info("master masterId[%s] masterType[%s]", masterID, masterType)
 
 	// load master node config
-	masterNode, err := cprofile.LoadNode(masterId, masterType)
+	masterNode, err := cprofile.LoadNode(masterID, masterType)
 	if err != nil {
-		clog.Error(err.Error())
+		panic(err)
 	}
 
 	m.masterMember = &cproto.Member{
@@ -127,7 +129,7 @@ func (m *DiscoveryNats) init() {
 
 	m.subscribe(m.unregisterSubject, func(msg *nats.Msg) {
 		unregisterMember := &cproto.Member{}
-		err := m.app.Serializer().Unmarshal(msg.Data, unregisterMember)
+		err := m.unmarshal(msg.Data, unregisterMember)
 		if err != nil {
 			clog.Warn("err = %s", err)
 			return
@@ -162,10 +164,10 @@ func (m *DiscoveryNats) serverInit() {
 	// subscribe register message
 	m.subscribe(m.registerSubject, func(msg *nats.Msg) {
 		newMember := &cproto.Member{}
-		err := m.app.Serializer().Unmarshal(msg.Data, newMember)
+		err := m.unmarshal(msg.Data, newMember)
 		if err != nil {
 			clog.Warn("IMember Unmarshal[name = %s] error. dataLen = %+v, err = %s",
-				m.app.Serializer().Name(),
+				"protobuf",
 				len(msg.Data),
 				err,
 			)
@@ -188,7 +190,7 @@ func (m *DiscoveryNats) serverInit() {
 			return true
 		})
 
-		rspData, err := m.app.Serializer().Marshal(memberList)
+		rspData, err := m.marshal(memberList)
 		if err != nil {
 			clog.Warn("marshal fail. err = %s", err)
 			return
@@ -224,7 +226,7 @@ func (m *DiscoveryNats) clientInit() {
 	// receive registered node
 	m.subscribe(m.addSubject, func(msg *nats.Msg) {
 		addMember := &cproto.Member{}
-		err := m.app.Serializer().Unmarshal(msg.Data, addMember)
+		err := m.unmarshal(msg.Data, addMember)
 		if err != nil {
 			clog.Warn("err = %s", err)
 			return
@@ -270,13 +272,13 @@ func (m *DiscoveryNats) registerToMaster() {
 	)
 
 	memberList := cproto.MemberList{}
-	err = m.app.Serializer().Unmarshal(rsp, &memberList)
+	err = m.unmarshal(rsp, &memberList)
 	if err != nil {
 		clog.Warn("err = %s", err)
 		return
 	}
 
-	clog.Info("memberList[%v]", memberList)
+	clog.Info("memberList[%v]", &memberList)
 	for _, member := range memberList.GetList() {
 		m.AddMember(member)
 	}
@@ -301,4 +303,23 @@ func (m *DiscoveryNats) subscribe(subject string, cb nats.MsgHandler) {
 		clog.Warn("subscribe fail. err = %s subject[%v] Address[%v]", err, subject, cnats.GetConnect().Address())
 		return
 	}
+}
+
+// marshal keeps the discovery control plane on protobuf independently of the
+// application's JSON/protobuf body codec selection.
+func (m *DiscoveryNats) marshal(value any) ([]byte, error) {
+	message, ok := value.(proto.Message)
+	if !ok {
+		return nil, fmt.Errorf("actorgo discovery: %T is not a protobuf message", value)
+	}
+	return proto.Marshal(message)
+}
+
+// unmarshal decodes discovery messages using the fixed protobuf control-plane format.
+func (m *DiscoveryNats) unmarshal(data []byte, value any) error {
+	message, ok := value.(proto.Message)
+	if !ok {
+		return fmt.Errorf("actorgo discovery: %T is not a protobuf message", value)
+	}
+	return proto.Unmarshal(data, message)
 }

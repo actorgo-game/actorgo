@@ -1,44 +1,44 @@
-# ActorGo 游戏品类使用场景与开发示范
+# ActorGo 游戏品类使用场景与开发示�?
 
 ## 目录
 
 - [前言：Actor 建模思路](#前言actor-建模思路)
-- [一、即时通讯 / 聊天室](#一即时通讯--聊天室)
+- [一、即时通讯 / 聊天室](#一即时通讯--聊天�?
 - [二、回合制卡牌 / RPG](#二回合制卡牌--rpg)
-- [三、MMORPG / 大世界](#三mmorpg--大世界)
-- [四、实时对战 / MOBA / FPS](#四实时对战--moba--fps)
-- [五、棋牌 / 桌游](#五棋牌--桌游)
+- [三、MMORPG / 大世界](#三mmorpg--大世�?
+- [四、实时对�?/ MOBA / FPS](#四实时对�?-moba--fps)
+- [五、棋�?/ 桌游](#五棋�?-桌游)
 - [六、SLG / 策略经营](#六slg--策略经营)
 - [七、休闲竞技 / 派对游戏](#七休闲竞技--派对游戏)
-- [八、Roguelike / 单局制游戏](#八roguelike--单局制游戏)
-- [九、通用模块：跨品类可复用的 Actor 设计](#九通用模块跨品类可复用的-actor-设计)
+- [八、Roguelike / 单局制游戏](#八roguelike--单局制游�?
+- [九、通用模块：跨品类可复用的 Actor 设计](#九通用模块跨品类可复用�?actor-设计)
 - [十、最佳实践与注意事项](#十最佳实践与注意事项)
 
 ---
 
 ## 前言：Actor 建模思路
 
-在使用 ActorGo 开发任何品类的游戏之前，需要理解 Actor 建模的核心思路：
+在使�?ActorGo 开发任何品类的游戏之前，需要理�?Actor 建模的核心思路�?
 
-### 一个 Actor 应该代表什么？
+### 一�?Actor 应该代表什么？
 
 | 原则 | 说明 |
 |------|------|
-| **独立状态单元** | 一个 Actor 管理一份独立的、不与其他 Actor 共享的状态 |
-| **串行处理边界** | 需要串行处理的逻辑放在同一个 Actor 中 |
-| **生命周期一致** | Actor 的生命周期应与其管理的业务实体一致 |
+| **独立状态单�?* | 一�?Actor 管理一份独立的、不与其�?Actor 共享的状�?|
+| **串行处理边界** | 需要串行处理的逻辑放在同一�?Actor �?|
+| **生命周期一�?* | Actor 的生命周期应与其管理的业务实体一�?|
 
 ### 常见建模方式
 
 ```
-游戏实体          →  Actor 模型
+游戏实体          �? Actor 模型
 ─────────────────────────────────
-单个玩家会话       →  子 Actor（Agent）
-一个游戏房间       →  子 Actor
-一个游戏大厅       →  父 Actor
-全服排行榜         →  独立 Actor
-匹配队列           →  独立 Actor
-全服邮件系统       →  独立 Actor
+单个玩家会话       �? �?Actor（Agent�?
+一个游戏房�?      �? �?Actor
+一个游戏大�?      �? �?Actor
+全服排行�?        �? 独立 Actor
+匹配队列           �? 独立 Actor
+全服邮件系统       �? 独立 Actor
 ```
 
 ### 框架核心 API 速查
@@ -46,57 +46,57 @@
 ```go
 // 嵌入 Base 获得 Actor 能力
 type MyActor struct {
-    cactor.Base   // 或 pomelo.ActorBase（Pomelo 协议时）
+    cactor.Base   // �?pomelo.ActorBase（Pomelo 协议时）
 }
 
 // 通过 load 注册消息处理函数
 func (p *MyActor) load(actor *cactor.Actor) {
     p.Actor = actor
-    // 注册客户端消息（Local）
+    // 注册客户端消息（Local�?
     p.Local().Register("join", p.onJoin)
-    // 注册 Actor 间消息（Remote）
-    p.Remote().Register("settle", p.onSettle)
+    // 注册 Actor 间消息（Remote�?
+    p.Methods().Register("settle", p.onSettle)
     // 注册事件
     p.Event().Register("playerOffline", p.onPlayerOffline)
-    // 注册定时器
+    // 注册定时�?
     p.Timer().Add(time.Second, p.onTick)
 }
 
 // Local 函数签名：func(session, args)
 func (p *MyActor) onJoin(session *cproto.Session, msg *pb.JoinReq) { ... }
 
-// Remote 函数签名：func(args) 或 func(args) (reply, code)
+// Remote 函数签名：func(args) �?func(args) (reply, code)
 func (p *MyActor) onSettle(req *pb.SettleReq) { ... }
 ```
 
 ---
 
-## 一、即时通讯 / 聊天室
+## 一、即时通讯 / 聊天�?
 
 ### 场景特点
 
 - 多房间并行，每个房间独立广播
-- 玩家动态加入/退出房间
-- 消息量大但逻辑简单
+- 玩家动态加�?退出房�?
+- 消息量大但逻辑简�?
 
 ### Actor 建模
 
 ```
 Gate 节点（前端）                    Chat 节点（后端）
-┌─────────────────┐               ┌─────────────────────┐
-│ AgentActor      │               │ ChatActor (父)       │
-│ ├── Agent-sid1  │──── NATS ────►│ ├── Room-1001 (子)  │
-│ ├── Agent-sid2  │               │ ├── Room-1002 (子)  │
-│ └── Agent-sid3  │               │ └── Room-1003 (子)  │
-└─────────────────┘               └─────────────────────┘
+┌─────────────────�?              ┌─────────────────────�?
+�?AgentActor      �?              �?ChatActor (�?       �?
+�?├── Agent-sid1  │──── NATS ────►│ ├── Room-1001 (�?  �?
+�?├── Agent-sid2  �?              �?├── Room-1002 (�?  �?
+�?└── Agent-sid3  �?              �?└── Room-1003 (�?  �?
+└─────────────────�?              └─────────────────────�?
 ```
 
-### 节点与协议配置
+### 节点与协议配�?
 
 ```go
 func main() {
-    // Gate 节点 —— 前端，处理客户端连接
-    app := actorgo.Configure("profile.json", "gate-1", true, actorgo.Cluster)
+    // Gate 节点 —�?前端，处理客户端连接
+    app := actorgo.Configure("profile.json", "gate-1", actorgo.Cluster)
 
     pomeloActor := pomelo.NewActor("agent")
     pomeloActor.AddConnector(cconnector.NewWS(":9001"))
@@ -108,14 +108,14 @@ func main() {
 
 ```go
 func main() {
-    // Chat 节点 —— 后端，处理聊天逻辑
-    app := actorgo.Configure("profile.json", "chat-1", false, actorgo.Cluster)
+    // Chat 节点 —�?后端，处理聊天逻辑
+    app := actorgo.Configure("profile.json", "chat-1", actorgo.Cluster)
     app.AddActors(&ChatActor{})
     app.Startup()
 }
 ```
 
-### ChatActor（父 Actor）—— 房间管理器
+### ChatActor（父 Actor）—�?房间管理�?
 
 ```go
 type ChatActor struct {
@@ -127,11 +127,11 @@ func (p *ChatActor) AliasID() string { return "chat" }
 
 func (p *ChatActor) OnInit() {
     p.rooms = make(map[string]*RoomState)
-    p.Remote().Register("createRoom", p.onCreateRoom)
-    p.Remote().Register("listRooms", p.onListRooms)
+    p.Methods().Register("createRoom", p.onCreateRoom)
+    p.Methods().Register("listRooms", p.onListRooms)
 }
 
-// 当消息目标为子 Actor 但子 Actor 不存在时，动态创建房间
+// 当消息目标为�?Actor 但子 Actor 不存在时，动态创建房�?
 func (p *ChatActor) OnFindChild(m *cfacade.Message) (cfacade.IActor, bool) {
     roomID := m.TargetPath().ChildID
     roomHandler := &RoomActor{roomID: roomID}
@@ -164,13 +164,13 @@ func (p *ChatActor) onListRooms(req *pb.ListRoomsReq) (*pb.ListRoomsRsp, int32) 
 }
 ```
 
-### RoomActor（子 Actor）—— 单个聊天房间
+### RoomActor（子 Actor）—�?单个聊天房间
 
 ```go
 type RoomActor struct {
     cactor.Base
     roomID  string
-    members map[int64]*MemberInfo // uid → 成员信息
+    members map[int64]*MemberInfo // uid �?成员信息
 }
 
 func (p *RoomActor) AliasID() string { return p.roomID }
@@ -190,13 +190,13 @@ func (p *RoomActor) onJoin(session *cproto.Session, msg *pb.JoinReq) {
         Name:      msg.Nickname,
     }
 
-    // 响应客户端
+    // 响应客户�?
     pomelo.Response(p, session.AgentPath, session.Sid, session.GetMID(), &pb.JoinRsp{
         RoomID:  p.roomID,
         Members: p.memberList(),
     })
 
-    // 广播给房间内其他人
+    // 广播给房间内其他�?
     p.broadcastToRoom(&pb.JoinNotify{
         UID:  session.Uid,
         Name: msg.Nickname,
@@ -225,7 +225,7 @@ func (p *RoomActor) onLeave(session *cproto.Session, msg *pb.LeaveReq) {
     p.broadcastToRoom(&pb.LeaveNotify{UID: session.Uid}, "onMemberLeave", session.Uid)
 }
 
-// 向房间内所有成员推送消息
+// 向房间内所有成员推送消�?
 func (p *RoomActor) broadcastToRoom(v any, route string, excludeUID int64) {
     for uid, member := range p.members {
         if uid == excludeUID {
@@ -236,11 +236,11 @@ func (p *RoomActor) broadcastToRoom(v any, route string, excludeUID int64) {
 }
 ```
 
-**要点**：
-- 每个聊天房间是一个子 Actor，天然隔离状态
-- `members` map 只在 RoomActor 的 goroutine 中访问，无需加锁
+**要点**�?
+- 每个聊天房间是一个子 Actor，天然隔离状�?
+- `members` map 只在 RoomActor �?goroutine 中访问，无需加锁
 - `OnFindChild` 实现按需创建房间
-- 房间空了时调用 `Exit()` 自动销毁
+- 房间空了时调�?`Exit()` 自动销�?
 
 ---
 
@@ -250,24 +250,24 @@ func (p *RoomActor) broadcastToRoom(v any, route string, excludeUID int64) {
 
 - 强角色状态（属性、装备、背包、任务）
 - 回合制战斗，节奏较慢
-- 关注数据持久化和跨系统交互
+- 关注数据持久化和跨系统交�?
 
 ### Actor 建模
 
 ```
 Gate 节点                  Game 节点                    Center 节点
-┌────────────┐            ┌─────────────────┐          ┌─────────────────┐
-│ AgentActor │            │ PlayerActor (父) │          │ RankActor       │
-│ ├── sid1   │── NATS ──►│ ├── uid-10001   │── NATS──►│                 │
-│ └── sid2   │            │ └── uid-10002   │          │ MailActor       │
-└────────────┘            │                 │          │                 │
-                          │ BattleActor (父) │          │ ShopActor       │
-                          │ ├── battle-1    │          └─────────────────┘
-                          │ └── battle-2    │
-                          └─────────────────┘
+┌────────────�?           ┌─────────────────�?         ┌─────────────────�?
+�?AgentActor �?           �?PlayerActor (�? �?         �?RankActor       �?
+�?├── sid1   │── NATS ──►│ ├── uid-10001   │── NATS──►│                 �?
+�?└── sid2   �?           �?└── uid-10002   �?         �?MailActor       �?
+└────────────�?           �?                �?         �?                �?
+                          �?BattleActor (�? �?         �?ShopActor       �?
+                          �?├── battle-1    �?         └─────────────────�?
+                          �?└── battle-2    �?
+                          └─────────────────�?
 ```
 
-### PlayerActor —— 玩家管理器
+### PlayerActor —�?玩家管理�?
 
 ```go
 type PlayerActor struct {
@@ -277,7 +277,7 @@ type PlayerActor struct {
 func (p *PlayerActor) AliasID() string { return "player" }
 
 func (p *PlayerActor) OnInit() {
-    p.Remote().Register("login", p.onLogin)
+    p.Methods().Register("login", p.onLogin)
 }
 
 // 客户端登录后，动态创建玩家子 Actor
@@ -292,7 +292,7 @@ func (p *PlayerActor) OnFindChild(m *cfacade.Message) (cfacade.IActor, bool) {
 }
 
 func (p *PlayerActor) onLogin(req *pb.LoginReq) (*pb.LoginRsp, int32) {
-    // 验证账号，加载玩家数据，创建子 Actor
+    // 验证账号，加载玩家数据，创建�?Actor
     playerData := loadPlayerFromDB(req.UID)
     handler := NewPlayerChildActor(playerData)
     p.Child().Create(fmt.Sprintf("%d", req.UID), handler)
@@ -300,7 +300,7 @@ func (p *PlayerActor) onLogin(req *pb.LoginReq) (*pb.LoginRsp, int32) {
 }
 ```
 
-### PlayerChildActor —— 单个玩家实体
+### PlayerChildActor —�?单个玩家实体
 
 ```go
 type PlayerChildActor struct {
@@ -327,16 +327,16 @@ func (p *PlayerChildActor) AliasID() string {
 }
 
 func (p *PlayerChildActor) OnInit() {
-    // 客户端消息
+    // 客户端消�?
     p.Local().Register("getProfile", p.onGetProfile)
     p.Local().Register("useItem", p.onUseItem)
     p.Local().Register("equipItem", p.onEquipItem)
     p.Local().Register("startBattle", p.onStartBattle)
     p.Local().Register("acceptQuest", p.onAcceptQuest)
 
-    // Actor 间消息
-    p.Remote().Register("addItem", p.onAddItem)
-    p.Remote().Register("battleResult", p.onBattleResult)
+    // Actor 间消�?
+    p.Methods().Register("addItem", p.onAddItem)
+    p.Methods().Register("battleResult", p.onBattleResult)
 
     // 事件监听
     p.Event().Register("dailyReset", p.onDailyReset, p.uid)
@@ -346,10 +346,10 @@ func (p *PlayerChildActor) OnInit() {
 }
 
 func (p *PlayerChildActor) OnStop() {
-    p.saveToDatabase() // 下线时存档
+    p.saveToDatabase() // 下线时存�?
 }
 
-// ─── 客户端请求处理 ───
+// ─── 客户端请求处�?───
 
 func (p *PlayerChildActor) onGetProfile(session *cproto.Session, msg *pb.GetProfileReq) {
     p.Response(session, &pb.GetProfileRsp{
@@ -372,24 +372,24 @@ func (p *PlayerChildActor) onUseItem(session *cproto.Session, msg *pb.UseItemReq
 }
 
 func (p *PlayerChildActor) onStartBattle(session *cproto.Session, msg *pb.StartBattleReq) {
-    // 跨 Actor 调用：通知 BattleActor 创建战斗
+    // �?Actor 调用：通知 BattleActor 创建战斗
     battleReq := &pb.CreateBattleReq{
         UID:      p.uid,
         StageID:  msg.StageID,
         TeamData: p.equip.GetTeamData(),
     }
-    // 本节点调用 battle Actor
+    // 本节点调�?battle Actor
     targetPath := p.NewNodePath("battle")
     p.Call(targetPath, "createBattle", battleReq)
 
     p.Response(session, &pb.StartBattleRsp{})
 }
 
-// ─── Actor 间消息 ───
+// ─── Actor 间消�?───
 
 func (p *PlayerChildActor) onAddItem(req *pb.AddItemReq) {
     p.bag.Add(req.ItemID, req.Count)
-    // 推送给客户端
+    // 推送给客户�?
     p.Push(p.getSession(), "onItemChange", &pb.ItemChangeNotify{
         ItemID: req.ItemID,
         Count:  p.bag.GetCount(req.ItemID),
@@ -403,7 +403,7 @@ func (p *PlayerChildActor) onBattleResult(result *pb.BattleResultReq) {
             p.bag.Add(item.ID, item.Count)
         }
     }
-    // 推送战斗结果
+    // 推送战斗结�?
     p.Push(p.getSession(), "onBattleResult", &pb.BattleResultNotify{Win: result.Win})
 }
 
@@ -419,7 +419,7 @@ func (p *PlayerChildActor) autoSave() {
 }
 ```
 
-### BattleActor —— 回合制战斗
+### BattleActor —�?回合制战�?
 
 ```go
 type BattleActor struct {
@@ -429,7 +429,7 @@ type BattleActor struct {
 func (p *BattleActor) AliasID() string { return "battle" }
 
 func (p *BattleActor) OnInit() {
-    p.Remote().Register("createBattle", p.onCreateBattle)
+    p.Methods().Register("createBattle", p.onCreateBattle)
 }
 
 func (p *BattleActor) OnFindChild(m *cfacade.Message) (cfacade.IActor, bool) {
@@ -463,7 +463,7 @@ func (p *BattleChildActor) AliasID() string { return p.battleID }
 
 func (p *BattleChildActor) OnInit() {
     p.Local().Register("action", p.onPlayerAction)
-    p.Remote().Register("aiAction", p.onAIAction)
+    p.Methods().Register("aiAction", p.onAIAction)
 
     p.state = BattleRunning
     p.round = 1
@@ -506,50 +506,50 @@ func (p *BattleChildActor) settleBattle() {
 }
 ```
 
-**要点**：
-- 玩家状态（背包、装备）在 PlayerChildActor 中串行访问，无竞态
+**要点**�?
+- 玩家状态（背包、装备）�?PlayerChildActor 中串行访问，无竞�?
 - 战斗以独立子 Actor 运行，战斗结束后 `Exit()` 释放资源
-- `autoSave` 定时器保证数据安全
-- `onDailyReset` 通过事件系统触发，仅通知指定 UID（UniqueID 过滤）
+- `autoSave` 定时器保证数据安�?
+- `onDailyReset` 通过事件系统触发，仅通知指定 UID（UniqueID 过滤�?
 
 ---
 
-## 三、MMORPG / 大世界
+## 三、MMORPG / 大世�?
 
 ### 场景特点
 
-- 大量玩家同场景，需要 AOI（区域兴趣）管理
-- 实时移动同步、技能战斗
+- 大量玩家同场景，需�?AOI（区域兴趣）管理
+- 实时移动同步、技能战�?
 - 场景切换频繁
 
 ### Actor 建模
 
 ```
 Gate 节点                   Scene 节点
-┌────────────┐             ┌──────────────────────┐
-│ AgentActor │             │ SceneActor (父)       │
-│ ├── sid1   │── NATS ───►│ ├── scene-1001 (子)   │ ← 新手村
-│ ├── sid2   │             │ ├── scene-2001 (子)   │ ← 主城
-│ └── sid3   │             │ └── scene-3001 (子)   │ ← 副本
-└────────────┘             └──────────────────────┘
+┌────────────�?            ┌──────────────────────�?
+�?AgentActor �?            �?SceneActor (�?       �?
+�?├── sid1   │── NATS ───►│ ├── scene-1001 (�?   �?�?新手�?
+�?├── sid2   �?            �?├── scene-2001 (�?   �?�?主城
+�?└── sid3   �?            �?└── scene-3001 (�?   �?�?副本
+└────────────�?            └──────────────────────�?
 
 Game 节点                   Center 节点
-┌────────────────┐         ┌─────────────┐
-│ PlayerActor    │         │ GuildActor  │
-│ ├── uid-10001  │         │ TeamActor   │
-│ └── uid-10002  │         │ WorldBoss   │
-└────────────────┘         └─────────────┘
+┌────────────────�?        ┌─────────────�?
+�?PlayerActor    �?        �?GuildActor  �?
+�?├── uid-10001  �?        �?TeamActor   �?
+�?└── uid-10002  �?        �?WorldBoss   �?
+└────────────────�?        └─────────────�?
 ```
 
-### SceneChildActor —— 单个场景实例
+### SceneChildActor —�?单个场景实例
 
 ```go
 type SceneChildActor struct {
     cactor.Base
     sceneID    int32
     mapID      int32
-    entities   map[int64]*Entity    // entityID → 实体
-    aoi        *AOIManager          // 九宫格 AOI
+    entities   map[int64]*Entity    // entityID �?实体
+    aoi        *AOIManager          // 九宫�?AOI
     tickTimer  uint64
 }
 
@@ -559,13 +559,13 @@ func (p *SceneChildActor) OnInit() {
     p.Local().Register("castSkill", p.onCastSkill)
     p.Local().Register("leaveScene", p.onLeaveScene)
 
-    p.Remote().Register("npcAction", p.onNpcAction)
-    p.Remote().Register("spawnMonster", p.onSpawnMonster)
+    p.Methods().Register("npcAction", p.onNpcAction)
+    p.Methods().Register("spawnMonster", p.onSpawnMonster)
 
     p.entities = make(map[int64]*Entity)
     p.aoi = NewAOIManager(p.mapID)
 
-    // 场景 Tick：每 100ms 驱动一次逻辑帧
+    // 场景 Tick：每 100ms 驱动一次逻辑�?
     p.tickTimer = p.Timer().Add(100*time.Millisecond, p.onTick)
 }
 
@@ -589,7 +589,7 @@ func (p *SceneChildActor) onEnterScene(session *cproto.Session, msg *pb.EnterSce
         Entities: entitiesToProto(nearbyEntities),
     })
 
-    // 通知视野内其他玩家
+    // 通知视野内其他玩�?
     p.broadcastToNearby(entity, "onEntityEnter", &pb.EntityEnterNotify{
         Entity: entityToProto(entity),
     })
@@ -608,7 +608,7 @@ func (p *SceneChildActor) onMove(session *cproto.Session, msg *pb.MoveReq) {
     // 更新 AOI 位置
     p.aoi.Move(entity, oldX, oldY, msg.Position.X, msg.Position.Y)
 
-    // 广播给视野内的玩家
+    // 广播给视野内的玩�?
     p.broadcastToNearby(entity, "onEntityMove", &pb.EntityMoveNotify{
         EntityID: entity.EntityID,
         Position: msg.Position,
@@ -639,13 +639,13 @@ func (p *SceneChildActor) onTick() {
             entity.AI.Update(now, p)
         }
     }
-    // 处理 Buff 倒计时
+    // 处理 Buff 倒计�?
     for _, entity := range p.entities {
         entity.UpdateBuffs(now)
     }
 }
 
-// AOI 广播：仅向视野范围内的玩家推送
+// AOI 广播：仅向视野范围内的玩家推�?
 func (p *SceneChildActor) broadcastToNearby(center *Entity, route string, v any) {
     nearbyEntities := p.aoi.GetNearby(center.Position.X, center.Position.Y)
     for _, e := range nearbyEntities {
@@ -656,7 +656,7 @@ func (p *SceneChildActor) broadcastToNearby(center *Entity, route string, v any)
 }
 ```
 
-### 跨场景传送
+### 跨场景传�?
 
 ```go
 func (p *SceneChildActor) onLeaveScene(session *cproto.Session, msg *pb.LeaveSceneReq) {
@@ -673,7 +673,7 @@ func (p *SceneChildActor) onLeaveScene(session *cproto.Session, msg *pb.LeaveSce
         EntityID: entity.EntityID,
     })
 
-    // 跨 Actor 调用：通知目标场景加入
+    // �?Actor 调用：通知目标场景加入
     targetScenePath := p.NewMyChildPath(fmt.Sprintf("scene-%d", msg.TargetSceneID))
     p.Call(targetScenePath, "transferIn", &pb.TransferInReq{
         UID:       session.Uid,
@@ -684,39 +684,39 @@ func (p *SceneChildActor) onLeaveScene(session *cproto.Session, msg *pb.LeaveSce
 }
 ```
 
-**要点**：
-- 场景以子 Actor 形式运行，每个场景实例独立
-- 100ms 的 Tick 定时器驱动帧逻辑（AI、Buff、状态同步）
-- AOI 管理在 Actor 内部实现，利用串行特性免锁
+**要点**�?
+- 场景以子 Actor 形式运行，每个场景实例独�?
+- 100ms �?Tick 定时器驱动帧逻辑（AI、Buff、状态同步）
+- AOI 管理�?Actor 内部实现，利用串行特性免�?
 - 跨场景传送通过 `Call` 实现 Actor 间通信
 
 ---
 
-## 四、实时对战 / MOBA / FPS
+## 四、实时对�?/ MOBA / FPS
 
 ### 场景特点
 
 - 高频状态同步（帧同步或状态同步）
-- 单局制，房间生命周期短
+- 单局制，房间生命周期�?
 - 匹配系统需全局协调
 
 ### Actor 建模
 
 ```
 Gate 节点          Match 节点           Battle 节点
-┌──────────┐      ┌─────────────┐      ┌───────────────────┐
-│ Agent    │      │ MatchActor  │      │ BattleActor (父)   │
-│ ├── s1   │      │             │      │ ├── battle-5001   │
-│ └── s2   │      └─────────────┘      │ └── battle-5002   │
-└──────────┘                           └───────────────────┘
+┌──────────�?     ┌─────────────�?     ┌───────────────────�?
+�?Agent    �?     �?MatchActor  �?     �?BattleActor (�?   �?
+�?├── s1   �?     �?            �?     �?├── battle-5001   �?
+�?└── s2   �?     └─────────────�?     �?└── battle-5002   �?
+└──────────�?                          └───────────────────�?
 ```
 
-### MatchActor —— 匹配系统
+### MatchActor —�?匹配系统
 
 ```go
 type MatchActor struct {
     cactor.Base
-    queues     map[int32]*MatchQueue  // modeID → 匹配队列
+    queues     map[int32]*MatchQueue  // modeID �?匹配队列
     matchTimer uint64
 }
 
@@ -724,14 +724,14 @@ func (p *MatchActor) AliasID() string { return "match" }
 
 func (p *MatchActor) OnInit() {
     p.queues = map[int32]*MatchQueue{
-        1: NewMatchQueue(1, 10), // 5v5 模式，需要 10 人
-        2: NewMatchQueue(2, 6),  // 3v3 模式，需要 6 人
+        1: NewMatchQueue(1, 10), // 5v5 模式，需�?10 �?
+        2: NewMatchQueue(2, 6),  // 3v3 模式，需�?6 �?
     }
 
-    p.Remote().Register("joinQueue", p.onJoinQueue)
-    p.Remote().Register("cancelQueue", p.onCancelQueue)
+    p.Methods().Register("joinQueue", p.onJoinQueue)
+    p.Methods().Register("cancelQueue", p.onCancelQueue)
 
-    // 每秒执行一次匹配算法
+    // 每秒执行一次匹配算�?
     p.matchTimer = p.Timer().Add(time.Second, p.doMatch)
 }
 
@@ -759,7 +759,7 @@ func (p *MatchActor) doMatch() {
 }
 
 func (p *MatchActor) createBattle(match *MatchResult) {
-    // 跨节点调用：在 Battle 节点创建战斗
+    // 跨节点调用：�?Battle 节点创建战斗
     battleNode, found := p.App().Discovery().Random("battle")
     if !found {
         return
@@ -782,7 +782,7 @@ func (p *MatchActor) createBattle(match *MatchResult) {
 }
 ```
 
-### BattleChildActor —— 帧同步战斗房间
+### BattleChildActor —�?帧同步战斗房�?
 
 ```go
 type FrameSyncBattle struct {
@@ -790,7 +790,7 @@ type FrameSyncBattle struct {
     battleID    string
     modeID      int32
     players     map[int64]*BattlePlayer
-    frameInputs map[int32][]*pb.PlayerInput // frame → inputs
+    frameInputs map[int32][]*pb.PlayerInput // frame �?inputs
     currentFrame int32
     frameTimer   uint64
     state        BattleState
@@ -801,7 +801,7 @@ func (p *FrameSyncBattle) OnInit() {
     p.Local().Register("input", p.onInput)
     p.Local().Register("reconnect", p.onReconnect)
 
-    // 等待所有玩家准备，30 秒超时
+    // 等待所有玩家准备，30 秒超�?
     p.Timer().AddOnce(30*time.Second, p.onReadyTimeout)
 }
 
@@ -821,7 +821,7 @@ func (p *FrameSyncBattle) startBattle() {
     p.state = BattleRunning
     p.broadcastAll("onBattleStart", &pb.BattleStartNotify{})
 
-    // 启动帧驱动定时器：每 66ms 一帧（约 15fps 逻辑帧）
+    // 启动帧驱动定时器：每 66ms 一帧（�?15fps 逻辑帧）
     p.frameTimer = p.Timer().Add(66*time.Millisecond, p.onFrameTick)
 }
 
@@ -839,7 +839,7 @@ func (p *FrameSyncBattle) onInput(session *cproto.Session, msg *pb.InputReq) {
 func (p *FrameSyncBattle) onFrameTick() {
     inputs := p.frameInputs[p.currentFrame]
 
-    // 广播本帧所有输入给所有玩家
+    // 广播本帧所有输入给所有玩�?
     p.broadcastAll("onFrame", &pb.FrameNotify{
         Frame:  p.currentFrame,
         Inputs: inputs,
@@ -879,36 +879,36 @@ func (p *FrameSyncBattle) broadcastAll(route string, v any) {
 }
 ```
 
-**要点**：
-- 匹配系统作为独立 Actor，1 秒 Tick 驱动匹配算法
-- 战斗房间以子 Actor 运行，帧同步用 66ms 定时器驱动
-- 帧同步核心：收集输入 → 广播帧数据 → 客户端本地计算
+**要点**�?
+- 匹配系统作为独立 Actor�? �?Tick 驱动匹配算法
+- 战斗房间以子 Actor 运行，帧同步�?66ms 定时器驱�?
+- 帧同步核心：收集输入 �?广播帧数�?�?客户端本地计�?
 - 断线重连：发送历史帧数据追帧
 
 ---
 
-## 五、棋牌 / 桌游
+## 五、棋�?/ 桌游
 
 ### 场景特点
 
-- 严格回合顺序，操作超时自动处理
+- 严格回合顺序，操作超时自动处�?
 - 牌桌生命周期明确（创建→游戏→结算→销毁）
-- 防作弊要求高，所有逻辑服务端运算
+- 防作弊要求高，所有逻辑服务端运�?
 
 ### Actor 建模
 
 ```
 Gate 节点               Game 节点
-┌────────────┐         ┌──────────────────────┐
-│ AgentActor │         │ HallActor (大厅)       │
-│ ├── s1     │─ NATS ─►│ TableActor (父)       │
-│ ├── s2     │         │ ├── table-7001 (子)   │ ← 一桌麻将
-│ └── s3     │         │ ├── table-7002 (子)   │ ← 一桌斗地主
-│             │         │ └── table-7003 (子)   │
-└────────────┘         └──────────────────────┘
+┌────────────�?        ┌──────────────────────�?
+�?AgentActor �?        �?HallActor (大厅)       �?
+�?├── s1     │─ NATS ─►│ TableActor (�?       �?
+�?├── s2     �?        �?├── table-7001 (�?   �?�?一桌麻�?
+�?└── s3     �?        �?├── table-7002 (�?   �?�?一桌斗地主
+�?            �?        �?└── table-7003 (�?   �?
+└────────────�?        └──────────────────────�?
 ```
 
-### TableChildActor —— 一桌麻将
+### TableChildActor —�?一桌麻�?
 
 ```go
 type MahjongTable struct {
@@ -916,10 +916,10 @@ type MahjongTable struct {
     tableID    string
     seats      [4]*Seat            // 四个座位
     deck       *MahjongDeck        // 牌堆
-    discards   []Tile              // 弃牌区
+    discards   []Tile              // 弃牌�?
     turnIndex  int                 // 当前出牌座位
     phase      GamePhase           // 等待/进行/结算
-    turnTimer  uint64              // 出牌超时定时器
+    turnTimer  uint64              // 出牌超时定时�?
 }
 
 type Seat struct {
@@ -927,7 +927,7 @@ type Seat struct {
     AgentPath string
     SID       string
     Hand      []Tile              // 手牌
-    Melds     []Meld              // 明牌组合（吃/碰/杠）
+    Melds     []Meld              // 明牌组合（吃/�?杠）
     Ready     bool
 }
 
@@ -935,7 +935,7 @@ func (p *MahjongTable) OnInit() {
     p.Local().Register("sitDown", p.onSitDown)
     p.Local().Register("ready", p.onReady)
     p.Local().Register("discard", p.onDiscard)
-    p.Local().Register("action", p.onAction) // 吃/碰/杠/胡
+    p.Local().Register("action", p.onAction) // �?�?�?�?
     p.Local().Register("pass", p.onPass)
 
     p.Event().Register("playerOffline", p.onPlayerOffline)
@@ -961,10 +961,10 @@ func (p *MahjongTable) startGame() {
     for i := 0; i < 4; i++ {
         p.seats[i].Hand = p.deck.Draw(13)
     }
-    // 庄家多摸一张
+    // 庄家多摸一�?
     p.seats[0].Hand = append(p.seats[0].Hand, p.deck.DrawOne())
 
-    // 通知每个玩家自己的手牌
+    // 通知每个玩家自己的手�?
     for i := 0; i < 4; i++ {
         seat := p.seats[i]
         pomelo.PushWithSID(p, seat.AgentPath, seat.SID, "onGameStart", &pb.GameStartNotify{
@@ -983,7 +983,7 @@ func (p *MahjongTable) startTurn() {
     seat := p.seats[p.turnIndex]
     p.broadcastAll("onTurnStart", &pb.TurnStartNotify{SeatIndex: int32(p.turnIndex)})
 
-    // 15 秒出牌超时
+    // 15 秒出牌超�?
     p.turnTimer = p.Timer().AddOnce(15*time.Second, p.onTurnTimeout)
 }
 
@@ -998,7 +998,7 @@ func (p *MahjongTable) onDiscard(session *cproto.Session, msg *pb.DiscardReq) {
     tile := seat.RemoveFromHand(msg.Tile)
     p.discards = append(p.discards, tile)
 
-    // 检查其他玩家是否可以吃/碰/杠/胡
+    // 检查其他玩家是否可以吃/�?�?�?
     actions := p.checkOtherActions(tile, p.turnIndex)
     if len(actions) > 0 {
         p.waitForActions(actions)
@@ -1036,12 +1036,12 @@ func (p *MahjongTable) nextTurn() {
     seat := p.seats[p.turnIndex]
     seat.Hand = append(seat.Hand, tile)
 
-    // 只通知摸牌的玩家看到牌面
+    // 只通知摸牌的玩家看到牌�?
     pomelo.PushWithSID(p, seat.AgentPath, seat.SID, "onDraw", &pb.DrawNotify{
         Tile: tileToProto(tile),
     })
 
-    // 检查自摸
+    // 检查自�?
     if checkWin(seat.Hand, seat.Melds) {
         pomelo.PushWithSID(p, seat.AgentPath, seat.SID, "onCanWin", &pb.CanWinNotify{})
     }
@@ -1054,7 +1054,7 @@ func (p *MahjongTable) endGame(winner *Seat) {
     result := p.calculateScore(winner)
     p.broadcastAll("onGameEnd", result)
 
-    // 5 秒后销毁牌桌
+    // 5 秒后销毁牌�?
     p.Timer().AddOnce(5*time.Second, func() { p.Exit() })
 }
 
@@ -1076,10 +1076,10 @@ func (p *MahjongTable) broadcastAll(route string, v any) {
 }
 ```
 
-**要点**：
-- 每桌游戏是一个子 Actor，状态完全隔离
+**要点**�?
+- 每桌游戏是一个子 Actor，状态完全隔�?
 - 回合超时使用 `AddOnce` 一次性定时器，出牌后立即 `Remove`
-- 所有洗牌、发牌、胡牌判定都在服务端完成，防止作弊
+- 所有洗牌、发牌、胡牌判定都在服务端完成，防止作�?
 - 掉线托管通过事件系统通知
 
 ---
@@ -1089,34 +1089,34 @@ func (p *MahjongTable) broadcastAll(route string, v any) {
 ### 场景特点
 
 - 大量异步操作（建造、行军、采集，均有倒计时）
-- 世界地图共享状态
+- 世界地图共享状�?
 - 联盟/工会系统需要全局协调
 
 ### Actor 建模
 
 ```
 Game 节点                          World 节点
-┌──────────────────────┐          ┌──────────────────────┐
-│ CityActor (父)        │          │ WorldMapActor        │
-│ ├── city-uid1 (子)   │          │ (全局唯一 Actor)      │
-│ └── city-uid2 (子)   │          │                      │
-│                      │          │ MarchActor (父)       │
-│ AllianceActor (父)    │          │ ├── march-5001 (子)  │
-│ ├── alliance-1 (子)  │          │ └── march-5002 (子)  │
-│ └── alliance-2 (子)  │          └──────────────────────┘
-└──────────────────────┘
+┌──────────────────────�?         ┌──────────────────────�?
+�?CityActor (�?        �?         �?WorldMapActor        �?
+�?├── city-uid1 (�?   �?         �?(全局唯一 Actor)      �?
+�?└── city-uid2 (�?   �?         �?                     �?
+�?                     �?         �?MarchActor (�?       �?
+�?AllianceActor (�?    �?         �?├── march-5001 (�?  �?
+�?├── alliance-1 (�?  �?         �?└── march-5002 (�?  �?
+�?└── alliance-2 (�?  �?         └──────────────────────�?
+└──────────────────────�?
 ```
 
-### CityChildActor —— 玩家城池
+### CityChildActor —�?玩家城池
 
 ```go
 type CityChildActor struct {
     cactor.Base
     uid        int64
     buildings  map[int32]*Building   // 建筑列表
-    resources  *Resources            // 资源（木/石/铁/粮）
+    resources  *Resources            // 资源（木/�?�?粮）
     troops     *TroopManager         // 兵力
-    buildQueue []*BuildTask          // 建造队列
+    buildQueue []*BuildTask          // 建造队�?
 }
 
 func (p *CityChildActor) OnInit() {
@@ -1126,13 +1126,13 @@ func (p *CityChildActor) OnInit() {
     p.Local().Register("march", p.onMarch)
     p.Local().Register("speedUp", p.onSpeedUp)
 
-    p.Remote().Register("addResource", p.onAddResource)
-    p.Remote().Register("troopReturn", p.onTroopReturn)
+    p.Methods().Register("addResource", p.onAddResource)
+    p.Methods().Register("troopReturn", p.onTroopReturn)
 
-    // 每秒 Tick，驱动资源产出和建造倒计时
+    // 每秒 Tick，驱动资源产出和建造倒计�?
     p.Timer().Add(time.Second, p.onTick)
 
-    // 恢复建造队列的定时器
+    // 恢复建造队列的定时�?
     for _, task := range p.buildQueue {
         remaining := task.FinishTime.Sub(time.Now())
         if remaining > 0 {
@@ -1190,8 +1190,8 @@ func (p *CityChildActor) onSpeedUp(session *cproto.Session, msg *pb.SpeedUpReq) 
         return
     }
 
-    // 消耗加速道具
-    // 移除旧定时器，创建新的
+    // 消耗加速道�?
+    // 移除旧定时器，创建新�?
     p.Timer().Remove(task.TimerID)
 
     task.FinishTime = task.FinishTime.Add(-msg.ReduceTime)
@@ -1211,7 +1211,7 @@ func (p *CityChildActor) onSpeedUp(session *cproto.Session, msg *pb.SpeedUpReq) 
 func (p *CityChildActor) onMarch(session *cproto.Session, msg *pb.MarchReq) {
     troops := p.troops.Detach(msg.TroopIDs)
 
-    // 通知 World 节点的 MarchActor 创建行军
+    // 通知 World 节点�?MarchActor 创建行军
     worldNode, _ := p.App().Discovery().Random("world")
     targetPath := cfacade.NewPath(worldNode.GetNodeID(), "march")
     p.Call(targetPath, "createMarch", &pb.CreateMarchReq{
@@ -1235,7 +1235,7 @@ func (p *CityChildActor) onTick() {
 }
 ```
 
-### MarchChildActor —— 行军实例
+### MarchChildActor —�?行军实例
 
 ```go
 type MarchChildActor struct {
@@ -1254,10 +1254,10 @@ func (p *MarchChildActor) OnInit() {
     duration := calculateMarchDuration(p.fromPos, p.toPos)
     p.arriveTime = time.Now().Add(duration)
 
-    // 到达定时器
+    // 到达定时�?
     p.Timer().AddOnce(duration, p.onArrive)
 
-    // 每 5 秒更新位置（同步给客户端地图）
+    // �?5 秒更新位置（同步给客户端地图�?
     p.Timer().Add(5*time.Second, p.onUpdatePosition)
 }
 
@@ -1276,11 +1276,11 @@ func (p *MarchChildActor) onArrive() {
 }
 ```
 
-**要点**：
-- 大量异步操作（建造、行军）通过 `AddOnce` 定时器实现
-- 加速功能：移除旧定时器 → 计算新剩余时间 → 创建新定时器
-- 下线后定时器仍在运行，上线后状态自然一致
-- 行军作为独立子 Actor，到达后自动销毁
+**要点**�?
+- 大量异步操作（建造、行军）通过 `AddOnce` 定时器实�?
+- 加速功能：移除旧定时器 �?计算新剩余时�?�?创建新定时器
+- 下线后定时器仍在运行，上线后状态自然一�?
+- 行军作为独立�?Actor，到达后自动销�?
 
 ---
 
@@ -1289,27 +1289,27 @@ func (p *MarchChildActor) onArrive() {
 ### 场景特点
 
 - 多种小游戏模式，规则各异
-- 快速开局，单局时间短
-- 需要房间大厅和快速匹配
+- 快速开局，单局时间�?
+- 需要房间大厅和快速匹�?
 
 ### Actor 建模
 
 ```
 Gate 节点              Game 节点
-┌────────────┐        ┌──────────────────────────┐
-│ AgentActor │        │ LobbyActor               │
-│            │─NATS──►│ RoomActor (父)            │
-│            │        │ ├── room-8001 (子)        │
-│            │        │ │  └─ 答题模式             │
-│            │        │ ├── room-8002 (子)        │
-│            │        │ │  └─ 画画猜词             │
-│            │        │ └── room-8003 (子)        │
-│            │        │    └─ 赛车               │
-│            │        │ QuickMatchActor           │
-└────────────┘        └──────────────────────────┘
+┌────────────�?       ┌──────────────────────────�?
+�?AgentActor �?       �?LobbyActor               �?
+�?           │─NATS──►│ RoomActor (�?            �?
+�?           �?       �?├── room-8001 (�?        �?
+�?           �?       �?�? └─ 答题模式             �?
+�?           �?       �?├── room-8002 (�?        �?
+�?           �?       �?�? └─ 画画猜词             �?
+�?           �?       �?└── room-8003 (�?        �?
+�?           �?       �?   └─ 赛车               �?
+�?           �?       �?QuickMatchActor           �?
+└────────────�?       └──────────────────────────�?
 ```
 
-### RoomChildActor —— 通用房间框架
+### RoomChildActor —�?通用房间框架
 
 ```go
 type RoomChildActor struct {
@@ -1323,7 +1323,7 @@ type RoomChildActor struct {
     state       RoomState     // Waiting / Playing / Settlement
 }
 
-// IGameHandler —— 游戏逻辑抽象接口
+// IGameHandler —�?游戏逻辑抽象接口
 type IGameHandler interface {
     OnStart(room *RoomChildActor)
     OnPlayerInput(room *RoomChildActor, uid int64, input []byte)
@@ -1341,7 +1341,7 @@ func (p *RoomChildActor) OnInit() {
 
 func (p *RoomChildActor) onStartGame(session *cproto.Session, msg *pb.StartGameReq) {
     if session.Uid != p.hostUID {
-        return // 只有房主能开始
+        return // 只有房主能开�?
     }
     if len(p.players) < 2 {
         return
@@ -1377,7 +1377,7 @@ func (p *RoomChildActor) onGameInput(session *cproto.Session, msg *pb.GameInputR
 }
 ```
 
-### QuizHandler —— 答题模式
+### QuizHandler —�?答题模式
 
 ```go
 type QuizHandler struct {
@@ -1401,7 +1401,7 @@ func (h *QuizHandler) sendQuestion(room *RoomChildActor) {
         Content: q.Content,
         Options: q.Options,
     })
-    // 10 秒作答时间
+    // 10 秒作答时�?
     h.roundTimer = room.Timer().AddOnce(10*time.Second, func() {
         h.nextQuestion(room)
     })
@@ -1426,37 +1426,37 @@ func (h *QuizHandler) nextQuestion(room *RoomChildActor) {
     h.sendQuestion(room)
 }
 
-func (h *QuizHandler) TickInterval() time.Duration { return 0 } // 答题模式不需要 Tick
+func (h *QuizHandler) TickInterval() time.Duration { return 0 } // 答题模式不需�?Tick
 ```
 
-**要点**：
-- 通过 `IGameHandler` 接口实现策略模式，一套房间框架适配多种小游戏
-- 不同游戏模式的 Tick 频率不同（答题不需要，赛车需要高频）
-- 房主控制游戏开始，避免非房主随意操作
+**要点**�?
+- 通过 `IGameHandler` 接口实现策略模式，一套房间框架适配多种小游�?
+- 不同游戏模式�?Tick 频率不同（答题不需要，赛车需要高频）
+- 房主控制游戏开始，避免非房主随意操�?
 
 ---
 
-## 八、Roguelike / 单局制游戏
+## 八、Roguelike / 单局制游�?
 
 ### 场景特点
 
 - 单人或小队冒险，随机生成关卡
 - 关卡内有复杂状态（地图、怪物、道具）
-- 关卡之间有进度保存
+- 关卡之间有进度保�?
 
 ### Actor 建模
 
 ```
 Game 节点
-┌───────────────────────────────┐
-│ DungeonActor (父)              │
-│ ├── dungeon-uid1-run1 (子)    │ ← 玩家1的第一次冒险
-│ ├── dungeon-uid2-run1 (子)    │ ← 玩家2的第一次冒险
-│ └── dungeon-uid1-run2 (子)    │ ← 玩家1的第二次冒险
-└───────────────────────────────┘
+┌───────────────────────────────�?
+�?DungeonActor (�?              �?
+�?├── dungeon-uid1-run1 (�?    �?�?玩家1的第一次冒�?
+�?├── dungeon-uid2-run1 (�?    �?�?玩家2的第一次冒�?
+�?└── dungeon-uid1-run2 (�?    �?�?玩家1的第二次冒险
+└───────────────────────────────�?
 ```
 
-### DungeonRunActor —— 一次 Roguelike 冒险
+### DungeonRunActor —�?一�?Roguelike 冒险
 
 ```go
 type DungeonRunActor struct {
@@ -1468,7 +1468,7 @@ type DungeonRunActor struct {
     currentFloor int32
     totalFloors  int32
     hero        *HeroState
-    inventory   []*RunItem        // 本次冒险的道具
+    inventory   []*RunItem        // 本次冒险的道�?
     mapData     *FloorMap
     enemies     []*Enemy
     agentPath   string
@@ -1483,7 +1483,7 @@ func (p *DungeonRunActor) OnInit() {
     p.Local().Register("nextFloor", p.onNextFloor)
     p.Local().Register("abandon", p.onAbandon)
 
-    p.Remote().Register("getState", p.onGetState)
+    p.Methods().Register("getState", p.onGetState)
 
     p.rng = rand.New(rand.NewSource(p.seed))
     p.generateFloor()
@@ -1576,12 +1576,12 @@ func (p *DungeonRunActor) onDungeonComplete() {
 
 func (p *DungeonRunActor) onAbandon(session *cproto.Session, msg *pb.AbandonReq) {
     pomelo.Response(p, session.AgentPath, session.Sid, session.GetMID(), &pb.AbandonRsp{})
-    p.Exit() // 放弃冒险，销毁 Actor
+    p.Exit() // 放弃冒险，销�?Actor
 }
 ```
 
-**要点**：
-- 每次冒险是独立子 Actor，互不影响
+**要点**�?
+- 每次冒险是独立子 Actor，互不影�?
 - 随机种子 (`seed`) 保证相同种子生成相同地图，便于重放和验证
 - Actor 销毁时冒险数据自然清理，无内存泄漏
 - 通关奖励通过 `Call` 发给 PlayerActor，解耦战斗和经济系统
@@ -1590,23 +1590,23 @@ func (p *DungeonRunActor) onAbandon(session *cproto.Session, msg *pb.AbandonReq)
 
 ## 九、通用模块：跨品类可复用的 Actor 设计
 
-### 9.1 排行榜 Actor
+### 9.1 排行�?Actor
 
 ```go
 type RankActor struct {
     cactor.Base
-    ranks map[string]*RankList // rankType → 排行榜
+    ranks map[string]*RankList // rankType �?排行�?
 }
 
 func (p *RankActor) AliasID() string { return "rank" }
 
 func (p *RankActor) OnInit() {
     p.ranks = make(map[string]*RankList)
-    p.Remote().Register("updateScore", p.onUpdateScore)
-    p.Remote().Register("getRank", p.onGetRank)
-    p.Remote().Register("getMyRank", p.onGetMyRank)
+    p.Methods().Register("updateScore", p.onUpdateScore)
+    p.Methods().Register("getRank", p.onGetRank)
+    p.Methods().Register("getMyRank", p.onGetMyRank)
 
-    // 每天 0 点重置日榜
+    // 每天 0 点重置日�?
     p.Timer().AddFixedHour(0, 0, 0, p.onDailyReset)
 }
 
@@ -1640,13 +1640,13 @@ type MailActor struct {
 func (p *MailActor) AliasID() string { return "mail" }
 
 func (p *MailActor) OnInit() {
-    p.Remote().Register("sendMail", p.onSendMail)
-    p.Remote().Register("getMailList", p.onGetMailList)
-    p.Remote().Register("readMail", p.onReadMail)
-    p.Remote().Register("claimAttachment", p.onClaimAttachment)
-    p.Remote().Register("sendGlobalMail", p.onSendGlobalMail)
+    p.Methods().Register("sendMail", p.onSendMail)
+    p.Methods().Register("getMailList", p.onGetMailList)
+    p.Methods().Register("readMail", p.onReadMail)
+    p.Methods().Register("claimAttachment", p.onClaimAttachment)
+    p.Methods().Register("sendGlobalMail", p.onSendGlobalMail)
 
-    // 每小时清理过期邮件
+    // 每小时清理过期邮�?
     p.Timer().Add(time.Hour, p.cleanExpiredMails)
 }
 
@@ -1663,7 +1663,7 @@ func (p *MailActor) onSendMail(req *pb.SendMailReq) {
     }
     saveMailToDB(mail)
 
-    // 如果目标玩家在线，实时推送
+    // 如果目标玩家在线，实时推�?
     playerPath := p.NewChildPath("player", fmt.Sprintf("%d", req.ToUID))
     p.Call(playerPath, "newMailNotify", &pb.NewMailNotify{MailID: mail.ID})
 }
@@ -1682,17 +1682,17 @@ type GuildChildActor struct {
 }
 
 func (p *GuildChildActor) OnInit() {
-    p.Remote().Register("applyJoin", p.onApplyJoin)
-    p.Remote().Register("approve", p.onApprove)
-    p.Remote().Register("kick", p.onKick)
-    p.Remote().Register("donate", p.onDonate)
-    p.Remote().Register("chat", p.onGuildChat)
+    p.Methods().Register("applyJoin", p.onApplyJoin)
+    p.Methods().Register("approve", p.onApprove)
+    p.Methods().Register("kick", p.onKick)
+    p.Methods().Register("donate", p.onDonate)
+    p.Methods().Register("chat", p.onGuildChat)
 
     p.Event().Register("memberLevelUp", p.onMemberLevelUp)
 }
 
 func (p *GuildChildActor) onGuildChat(req *pb.GuildChatReq) {
-    // 向所有在线成员推送
+    // 向所有在线成员推�?
     for _, member := range p.members {
         if member.Online {
             playerPath := p.NewChildPath("player", fmt.Sprintf("%d", member.UID))
@@ -1706,10 +1706,10 @@ func (p *GuildChildActor) onGuildChat(req *pb.GuildChatReq) {
 }
 ```
 
-### 9.4 全局事件发布 —— 每日重置
+### 9.4 全局事件发布 —�?每日重置
 
 ```go
-// 在 Center 节点的某个 Actor 中
+// �?Center 节点的某�?Actor �?
 func (p *CenterActor) OnInit() {
     // 每天 0:00 发布每日重置事件
     p.Timer().AddFixedHour(0, 0, 0, func() {
@@ -1720,7 +1720,7 @@ func (p *CenterActor) OnInit() {
 type DailyResetEvent struct{}
 
 func (e *DailyResetEvent) Name() string    { return "dailyReset" }
-func (e *DailyResetEvent) UniqueID() int64 { return 0 } // 0 表示通知所有订阅者
+func (e *DailyResetEvent) UniqueID() int64 { return 0 } // 0 表示通知所有订阅�?
 ```
 
 ---
@@ -1731,58 +1731,58 @@ func (e *DailyResetEvent) UniqueID() int64 { return 0 } // 0 表示通知所有�
 
 | 场景 | 推荐粒度 | 原因 |
 |------|---------|------|
-| 单个玩家状态 | 子 Actor（per player） | 每个玩家独立生命周期 |
-| 游戏房间/牌桌 | 子 Actor（per room） | 房间内状态隔离 |
-| 全服排行榜 | 独立父 Actor | 全局唯一，无需子 Actor |
-| 匹配队列 | 独立父 Actor | 全局协调 |
-| 世界地图格子 | 子 Actor（per region） | 区域隔离，减少锁竞争 |
+| 单个玩家状�?| �?Actor（per player�?| 每个玩家独立生命周期 |
+| 游戏房间/牌桌 | �?Actor（per room�?| 房间内状态隔�?|
+| 全服排行�?| 独立�?Actor | 全局唯一，无需�?Actor |
+| 匹配队列 | 独立�?Actor | 全局协调 |
+| 世界地图格子 | �?Actor（per region�?| 区域隔离，减少锁竞争 |
 
 ### 10.2 避免 CallWait 死锁
 
 ```go
-// 禁止 Actor 对自身 CallWait
-// 禁止两个 Actor 互相 CallWait（A → B 和 B → A 同时发生）
+// 禁止 Actor 对自�?CallWait
+// 禁止两个 Actor 互相 CallWait（A �?B �?B �?A 同时发生�?
 
-// 正确做法：使用 Call（异步）替代 CallWait
-p.Call(targetPath, "someFunc", req)  // 不阻塞
+// 正确做法：使�?Call（异步）替代 CallWait
+p.Call(targetPath, "someFunc", req)  // 不阻�?
 ```
 
-### 10.3 定时器使用规范
+### 10.3 定时器使用规�?
 
 ```go
-// 循环定时器：记住 ID，退出时会自动清理
+// 循环定时器：记住 ID，退出时会自动清�?
 id := p.Timer().Add(time.Second, p.onTick)
 
-// 一次性定时器：用于超时控制
+// 一次性定时器：用于超时控�?
 timeoutID := p.Timer().AddOnce(30*time.Second, p.onTimeout)
 // 在超时前完成时，主动移除
 p.Timer().Remove(timeoutID)
 
-// 每日固定时间：每天 12:00:00
+// 每日固定时间：每�?12:00:00
 p.Timer().AddFixedHour(12, 0, 0, p.onNoon)
 ```
 
 ### 10.4 事件使用规范
 
 ```go
-// 广播给所有订阅者（UniqueID = 0）
+// 广播给所有订阅者（UniqueID = 0�?
 p.PostEvent(&GlobalEvent{name: "serverShutdown"})
 
 // 定向通知（UniqueID 匹配时才投递）
 p.PostEvent(&PlayerEvent{name: "levelUp", uid: 10086})
 
-// 订阅时指定 UniqueID 过滤
+// 订阅时指�?UniqueID 过滤
 p.Event().Register("levelUp", p.onLevelUp, playerUID)
 ```
 
 ### 10.5 跨节点通信模式
 
 ```go
-// 模式一：Fire-and-forget（最常用）
+// 模式一：Fire-and-forget（最常用�?
 targetPath := cfacade.NewPath("game-1", "room")
 p.Call(targetPath, "doSomething", req)
 
-// 模式二：同步 RPC（谨慎使用，会阻塞当前 Actor）
+// 模式二：同步 RPC（谨慎使用，会阻塞当�?Actor�?
 var reply pb.SomeRsp
 code := p.CallWait(targetPath, "getData", req, &reply)
 
@@ -1790,13 +1790,13 @@ code := p.CallWait(targetPath, "getData", req, &reply)
 p.CallType("game", "room", "onConfigChange", req)
 ```
 
-### 10.6 子 Actor 生命周期管理
+### 10.6 �?Actor 生命周期管理
 
 ```go
-// 创建（幂等：重复创建返回已有实例）
+// 创建（幂等：重复创建返回已有实例�?
 child, err := p.Child().Create("room-1001", handler)
 
-// 按需创建（OnFindChild）
+// 按需创建（OnFindChild�?
 func (p *ParentActor) OnFindChild(m *cfacade.Message) (cfacade.IActor, bool) {
     childID := m.TargetPath().ChildID
     handler := createHandler(childID)
@@ -1807,10 +1807,10 @@ func (p *ParentActor) OnFindChild(m *cfacade.Message) (cfacade.IActor, bool) {
     return child, true
 }
 
-// 销毁：子 Actor 内部调用
+// 销毁：�?Actor 内部调用
 p.Exit()
 
-// 父 Actor 停止时自动级联关闭所有子 Actor
+// �?Actor 停止时自动级联关闭所有子 Actor
 ```
 
 ### 10.7 性能优化建议
@@ -1818,22 +1818,22 @@ p.Exit()
 | 场景 | 建议 |
 |------|------|
 | 高频广播（场景同步） | 使用 AOI 限制广播范围，避免全场景广播 |
-| 大量子 Actor | 设置空闲超时，自动 `Exit()` 释放资源 |
-| 频繁创建/销毁 | Actor 复用或预创建池 |
-| 大量定时器 | 优先使用 `AddOnce`，用完即移除 |
-| 数据持久化 | 定时批量写库，避免每次操作都写 |
-| 消息体积 | 集群内使用 Protobuf，压缩大包体 |
+| 大量�?Actor | 设置空闲超时，自�?`Exit()` 释放资源 |
+| 频繁创建/销�?| Actor 复用或预创建�?|
+| 大量定时�?| 优先使用 `AddOnce`，用完即移除 |
+| 数据持久�?| 定时批量写库，避免每次操作都�?|
+| 消息体积 | 集群内使�?Protobuf，压缩大包体 |
 
-### 10.8 调试与监控
+### 10.8 调试与监�?
 
 ```go
-// 消息到达超时监控（默认 100ms 告警）
+// 消息到达超时监控（默�?100ms 告警�?
 app.ActorSystem().SetArrivalTimeout(200)
 
-// 消息执行超时监控（默认 100ms 告警）
+// 消息执行超时监控（默�?100ms 告警�?
 app.ActorSystem().SetExecutionTimeout(200)
 
-// RPC 调用超时（默认 3s）
+// RPC 调用超时（默�?3s�?
 app.ActorSystem().SetCallTimeout(5 * time.Second)
 ```
 
@@ -1845,4 +1845,4 @@ app.ActorSystem().SetCallTimeout(5 * time.Second)
 
 ---
 
-> 本文档覆盖了 8 种主流游戏品类的 Actor 建模方案与代码示范，以及 4 种通用可复用模块的设计。所有示例代码基于 ActorGo 框架的真实 API 编写，可作为项目开发的起点参考。
+> 本文档覆盖了 8 种主流游戏品类的 Actor 建模方案与代码示范，以及 4 种通用可复用模块的设计。所有示例代码基�?ActorGo 框架的真�?API 编写，可作为项目开发的起点参考�?

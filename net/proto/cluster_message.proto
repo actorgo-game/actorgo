@@ -1,0 +1,33 @@
+syntax = "proto3";
+
+package actorgo.cluster.v1;
+
+option go_package = "github.com/actorgo-game/actorgo/net/proto;cproto";
+
+import "net/proto/proto.proto";
+
+// MsgType identifies the Actor operation carried between nodes.
+enum MsgType {
+  REQUEST = 0;
+  RESPONSE = 1;
+  NOTIFY = 2;
+}
+
+// ClusterMessage is the protobuf-only NATS message. payload uses codec, matching
+// the original AGP or HTTP request body encoding.
+message ClusterMessage {
+  reserved 13;
+
+  uint64 message_id = 1;
+  MsgType msg_type = 2;
+  uint32 request_id = 3;
+  uint32 method_id = 4;
+  int64 deadline_unix_ms = 5; // Absolute deadline preserves one budget across hops.
+  string target_path = 6;      // Optional; only used for an explicit child Actor.
+  cproto.Session session = 7; // Snapshot of caller session; same layout as local Session.
+  map<string, bytes> metadata = 8;
+  int32 codec = 9;
+  bytes payload = 10;
+  int32 code = 11;            // Response status; zero for requests and notifications.
+  string message = 12;        // Response error text.
+}

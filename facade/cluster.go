@@ -23,6 +23,7 @@ type (
 		Stop()
 	}
 
+	// IMember describes a node advertised by discovery.
 	IMember interface {
 		GetNodeID() string
 		GetNodeType() string
@@ -33,13 +34,10 @@ type (
 	MemberListener func(member IMember) // MemberListener 成员增、删监听函数
 )
 
-type (
-	ICluster interface {
-		Init()                                                                                               // 初始化
-		PublishLocal(nodeID string, packet *cproto.ClusterPacket) error                                      // 发布本地消息
-		PublishRemote(nodeID string, packet *cproto.ClusterPacket) error                                     // 发布远程消息
-		PublishRemoteType(nodeType string, cpacket *cproto.ClusterPacket) error                              // 根据节点类型发布远程消息
-		RequestRemote(nodeID string, packet *cproto.ClusterPacket, timeout ...time.Duration) ([]byte, int32) // 请求远程消息
-		Stop()                                                                                               // 停止
-	}
-)
+// ICluster transports protobuf cluster messages between discovered nodes.
+type ICluster interface {
+	Init()                                                                                                        // 初始化
+	Publish(nodeID string, message *cproto.ClusterMessage) error                                                  // 发布远程消息
+	Request(nodeID string, message *cproto.ClusterMessage, timeout time.Duration) (*cproto.ClusterMessage, error) // 请求远程消息
+	Stop()                                                                                                        // 停止
+}

@@ -2,23 +2,23 @@ package cserializer
 
 import (
 	cerr "github.com/actorgo-game/actorgo/error"
+	cfacade "github.com/actorgo-game/actorgo/facade"
 	"google.golang.org/protobuf/proto"
 )
 
-// Protobuf implements the serialize.Protobuf interface
+// Protobuf serializes concrete generated protobuf messages.
 type Protobuf struct{}
 
-// NewProtobuf NewSerializer returns a new Protobuf.
+// NewProtobuf creates the binary protobuf body codec.
 func NewProtobuf() *Protobuf {
 	return &Protobuf{}
 }
 
-// Marshal returns the protobuf encoding of v.
+// Marshal encodes a concrete protobuf message.
 func (p *Protobuf) Marshal(v any) ([]byte, error) {
 	if data, ok := v.([]byte); ok {
 		return data, nil
 	}
-
 	pb, ok := v.(proto.Message)
 	if !ok {
 		return nil, cerr.ProtobufWrongValueType
@@ -26,8 +26,7 @@ func (p *Protobuf) Marshal(v any) ([]byte, error) {
 	return proto.Marshal(pb)
 }
 
-// Unmarshal parses the protobuf-encoded data and stores the result
-// in the value pointed to by v.
+// Unmarshal decodes into a concrete protobuf message.
 func (p *Protobuf) Unmarshal(data []byte, v any) error {
 	pb, ok := v.(proto.Message)
 	if !ok {
@@ -36,7 +35,12 @@ func (p *Protobuf) Unmarshal(data []byte, v any) error {
 	return proto.Unmarshal(data, pb)
 }
 
-// Name returns the name of the serializer.
+// Name returns the codec name.
 func (p *Protobuf) Name() string {
 	return "protobuf"
+}
+
+// ID returns the stable AGP protobuf codec ID.
+func (p *Protobuf) ID() int32 {
+	return cfacade.CodecProtobuf
 }

@@ -12,6 +12,7 @@ import (
 	cfacade "github.com/actorgo-game/actorgo/facade"
 	clog "github.com/actorgo-game/actorgo/logger"
 	cactor "github.com/actorgo-game/actorgo/net/actor"
+	cmethod "github.com/actorgo-game/actorgo/net/method"
 	cserializer "github.com/actorgo-game/actorgo/net/serializer"
 	cprofile "github.com/actorgo-game/actorgo/profile"
 )
@@ -24,56 +25,57 @@ const (
 type (
 	NodeMode byte
 
+	// Application owns the node configuration and coordinates codecs,
+	// components, Actor routing, discovery, and cluster lifecycle.
 	Application struct {
 		cfacade.INode
-		isFrontend   bool
 		nodeMode     NodeMode
-		startTime    ctime.ActorGoTime    // application start time
-		running      int32                // is running
-		dieChan      chan bool            // wait for end application
-		onShutdownFn []func()             // on shutdown execute functions
-		components   []cfacade.IComponent // all components
-		serializer   cfacade.ISerializer  // serializer
-		discovery    cfacade.IDiscovery   // discovery component
-		cluster      cfacade.ICluster     // cluster component
-		actorSystem  *cactor.Component    // actor system
-		netParser    cfacade.INetParser   // net packet parser
+		startTime    ctime.ActorGoTime     // application start time
+		running      int32                 // is running
+		dieChan      chan bool             // wait for end application
+		onShutdownFn []func()              // on shutdown execute functions
+		components   []cfacade.IComponent  // all components
+		codecs       *cserializer.Registry // JSON/PB body codec allow-list
+		discovery    cfacade.IDiscovery    // discovery component
+		cluster      cfacade.ICluster      // cluster component
+		actorSystem  *cactor.Component     // actor system
+		methods      cfacade.IMethodTable  // automatically populated Actor method routes
 	}
 )
 
 // NewApp create new application instance
-func NewApp(profileFilePath, nodeIDStr string, isFrontend bool, mode NodeMode) *Application {
+// It resolves the node entry from the supplied profile before constructing it.
+func NewApp(profileFilePath, nodeIDStr string, mode NodeMode) *Application {
 	node, err := cprofile.Init(profileFilePath, nodeIDStr)
 	if err != nil {
 		panic(err)
 	}
 
-	return NewAppNode(node, isFrontend, mode)
+	return NewAppNode(node, mode)
 }
 
-func NewAppNode(node cfacade.INode, isFrontend bool, mode NodeMode) *Application {
+// NewAppNode creates an application from an already resolved node definition.
+func NewAppNode(node cfacade.INode, mode NodeMode) *Application {
 	// set logger
 	clog.SetNodeLogger(node)
 
 	// print version info
 	clog.Info(cconst.GetLOGO())
 
+	protobufCodec := cserializer.NewProtobuf()
+	jsonCodec := cserializer.NewJSON()
 	app := &Application{
 		INode:       node,
-		serializer:  cserializer.NewProtobuf(),
-		isFrontend:  isFrontend,
+		codecs:      cserializer.NewRegistry(protobufCodec, jsonCodec),
 		nodeMode:    mode,
 		startTime:   ctime.Now(),
 		running:     0,
 		dieChan:     make(chan bool),
 		actorSystem: cactor.New(),
 	}
+	app.methods = cmethod.NewTable(app)
 
 	return app
-}
-
-func (a *Application) IsFrontend() bool {
-	return a.isFrontend
 }
 
 func (a *Application) NodeMode() NodeMode {
@@ -151,7 +153,7 @@ func (a *Application) OnShutdown(fn ...func()) {
 func (a *Application) Startup() {
 	defer func() {
 		if r := recover(); r != nil {
-			clog.Error(r.(string))
+			clog.Error("%v", r)
 		}
 	}()
 
@@ -165,13 +167,9 @@ func (a *Application) Startup() {
 	}()
 
 	// register actor system
-	a.Register(a.actorSystem)
-
-	// add connector component
-	if a.netParser != nil {
-		for _, connector := range a.netParser.Connectors() {
-			a.Register(connector)
-		}
+	// ActorSystem must initialize before network servers and create actors before listeners start.
+	if a.Find(a.actorSystem.Name()) == nil {
+		a.components = append([]cfacade.IComponent{a.actorSystem}, a.components...)
 	}
 
 	clog.Info("-------------------------------------------------")
@@ -187,7 +185,7 @@ func (a *Application) Startup() {
 	clog.Info("[logLevel    = %s]", clog.DefaultLogger.LogLevel)
 	clog.Info("[stackLevel  = %s]", clog.DefaultLogger.StackLevel)
 	clog.Info("[writeFile   = %v]", clog.DefaultLogger.EnableWriteFile)
-	clog.Info("[serializer  = %s]", a.serializer.Name())
+	clog.Info("[bodyCodec  = %d]", a.codecs.Default())
 	clog.Info("-------------------------------------------------")
 
 	// component list
@@ -208,14 +206,6 @@ func (a *Application) Startup() {
 	for _, c := range a.components {
 		clog.Info("[component = %s] -> OnAfterInit().", c.Name())
 		c.OnAfterInit()
-	}
-
-	// load net packet parser
-	if a.isFrontend {
-		if a.netParser == nil {
-			clog.Panic("net packet parser is nil.")
-		}
-		a.netParser.Load(a)
 	}
 
 	clog.Info("-------------------------------------------------")
@@ -276,8 +266,20 @@ func (a *Application) Shutdown() {
 	a.dieChan <- true
 }
 
-func (a *Application) Serializer() cfacade.ISerializer {
-	return a.serializer
+// BodyCodecs returns the shared allow-list used by AGP, HTTP, and cluster calls.
+func (a *Application) BodyCodecs() cfacade.IBodyCodecRegistry {
+	return a.codecs
+}
+
+// SetDefaultBodyCodec selects the default body codec before Startup.
+// JSON and protobuf remain registered simultaneously.
+func (a *Application) SetDefaultBodyCodec(id int32) {
+	if a.Running() {
+		return
+	}
+	if err := a.codecs.SetDefault(id); err != nil {
+		clog.Warn("[SetDefaultBodyCodec] %v", err)
+	}
 }
 
 func (a *Application) Discovery() cfacade.IDiscovery {
@@ -292,18 +294,16 @@ func (a *Application) ActorSystem() cfacade.IActorSystem {
 	return a.actorSystem
 }
 
+// Methods returns the MethodID-to-Actor route table populated during Actor initialization.
+func (a *Application) Methods() cfacade.IMethodTable {
+	return a.methods
+}
+
 func (a *Application) StartTime() string {
 	return a.startTime.ToDateTimeFormat()
 }
 
-func (a *Application) SetSerializer(serializer cfacade.ISerializer) {
-	if a.Running() || serializer == nil {
-		return
-	}
-
-	a.serializer = serializer
-}
-
+// SetDiscovery installs discovery before the application starts.
 func (a *Application) SetDiscovery(discovery cfacade.IDiscovery) {
 	if a.Running() || discovery == nil {
 		return
@@ -312,18 +312,11 @@ func (a *Application) SetDiscovery(discovery cfacade.IDiscovery) {
 	a.discovery = discovery
 }
 
+// SetCluster installs the cross-node transport before the application starts.
 func (a *Application) SetCluster(cluster cfacade.ICluster) {
 	if a.Running() || cluster == nil {
 		return
 	}
 
 	a.cluster = cluster
-}
-
-func (a *Application) SetNetParser(netParser cfacade.INetParser) {
-	if a.Running() || netParser == nil {
-		return
-	}
-
-	a.netParser = netParser
 }

@@ -8,14 +8,15 @@ help:
 	@echo " make modtidy"
 
 init:
-	@echo "[INIT] install protoc-gen-go"
-	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+	@echo "[INIT] install protobuf generator"
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11
 
 protoc:
-	@echo "[PROTOC] build proto files"
-	cd net && \
-	cd proto && \
-	protoc --go_out=. --go_opt=paths=source_relative proto.proto
+	@echo "[PROTOC] build AGP and cluster proto files"
+	protoc -I . --go_out=. --go_opt=paths=source_relative \
+		net/proto/base_type.proto \
+		net/proto/agp.proto \
+		net/proto/proto.proto net/proto/cluster_message.proto
 
 tag:
 	./tag.sh
@@ -41,4 +42,3 @@ modtidy:
 	cd components/gops/ && go mod tidy && cd ../../
 	cd components/gorm/ && go mod tidy && cd ../../
 	cd components/mongo/ && go mod tidy && cd ../../
-

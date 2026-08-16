@@ -1,65 +1,54 @@
 package cfacade
 
-import (
-	"time"
-
-	creflect "github.com/actorgo-game/actorgo/extend/reflect"
-)
+import "time"
 
 type (
+	// IActorSystem creates Actors and routes request/notify calls. Invoke and
+	// Notify resolve a top-level target by MethodID; the Target variants address
+	// an explicit Actor path, including a dynamic child.
 	IActorSystem interface {
 		GetIActor(id string) (IActor, bool)
 		CreateActor(id string, handler IActorHandler) (IActor, error)
-		PostRemote(m *Message) bool
-		PostLocal(m *Message) bool
-		PostEvent(data IEventData)
-		Call(source, target, funcName string, arg any) int32
-		CallWait(source, target, funcName string, arg, reply any) int32
-		CallType(nodeType, actorID, funcName string, arg any) int32
-		SetLocalInvoke(invoke InvokeFunc)
-		SetRemoteInvoke(invoke InvokeFunc)
+		Invoke(ctx *RequestContext, methodID uint32, payload any) *InvokeResult
+		InvokeNode(ctx *RequestContext, nodeID string, methodID uint32, payload any) *InvokeResult
+		InvokeTarget(ctx *RequestContext, target string, methodID uint32, payload any) *InvokeResult
+		Notify(ctx *RequestContext, methodID uint32, payload any) *InvokeResult
+		NotifyNode(ctx *RequestContext, nodeID string, methodID uint32, payload any) *InvokeResult
+		NotifyTarget(ctx *RequestContext, target string, methodID uint32, payload any) *InvokeResult
 		SetCallTimeout(d time.Duration)
-		SetArrivalTimeout(t int64)
 		SetExecutionTimeout(t int64)
 	}
 
-	InvokeFunc func(app IApplication, fi *creflect.FuncInfo, m *Message)
-
+	// IActor is the business-facing handle for one serialized Actor instance.
 	IActor interface {
 		App() IApplication
 		ActorID() string
 		Path() *ActorPath
-		Call(targetPath, funcName string, arg any) int32
-		CallWait(targetPath, funcName string, arg, reply any) int32
-		CallType(nodeType, actorID, funcName string, arg any) int32
-		PostRemote(m *Message)
-		PostLocal(m *Message)
 		LastAt() int64
+		Invoke(ctx *RequestContext, methodID uint32, payload any) *InvokeResult
+		Notify(ctx *RequestContext, methodID uint32, payload any) *InvokeResult
 		Exit()
 	}
 
+	// IActorHandler defines an Actor's identity and lifecycle hooks.
 	IActorHandler interface {
-		AliasID() string                          // actorID
-		OnInit()                                  // 当Actor启动前触发该函数
-		OnStop()                                  // 当Actor停止前触发该函数
-		OnLocalReceived(m *Message) (bool, bool)  // 当Actor接收local消息时触发该函数
-		OnRemoteReceived(m *Message) (bool, bool) // 当Actor接收remote消息时执行的函数
-		OnFindChild(m *Message) (IActor, bool)    // 当actor查找子Actor时触发该函数
+		AliasID() string                       // actorID
+		OnInit()                               // 当Actor启动前触发该函数
+		OnStop()                               // 当Actor停止前触发该函数
+		OnFindChild(m *Message) (IActor, bool) // 当actor查找子Actor时触发该函数
 	}
 
+	// IActorChild manages the dynamic children owned by one parent Actor.
 	IActorChild interface {
-		Create(id string, handler IActorHandler) (IActor, error)    // 创建子Actor
-		Get(id string) (IActor, bool)                               // 获取子Actor
-		Remove(id string)                                           // 称除子Actor
-		Each(fn func(i IActor))                                     // 遍历所有子Actor
-		Call(childID, funcName string, arg any)                     // 调用当前子actor的函数
-		CallWait(targetPath, funcName string, arg, reply any) int32 // 调用当前子actor的函数并等待返回
+		Create(id string, handler IActorHandler) (IActor, error) // 创建子Actor
+		Get(id string) (IActor, bool)                            // 获取子Actor
+		Remove(id string)                                        // 称除子Actor
+		Each(fn func(i IActor))                                  // 遍历所有子Actor
 	}
 )
 
-type (
-	IEventData interface {
-		Name() string    // 事件名
-		UniqueID() int64 // 唯一id
-	}
-)
+// IEventData identifies an event and optionally scopes delivery by UniqueID.
+type IEventData interface {
+	Name() string    // 事件名
+	UniqueID() int64 // 唯一id
+}

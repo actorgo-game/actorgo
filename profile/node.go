@@ -55,6 +55,8 @@ func (n *Node) String() string {
 	)
 }
 
+// GetNodeWithConfig resolves the matching node type and ID from a loaded profile.
+// A node_id entry may be an exact string, an anchored regular expression, or a list.
 func GetNodeWithConfig(config *Config, nodeId string, ndType string) (cfacade.INode, error) {
 	nodeConfig := config.GetConfig("node")
 	if nodeConfig.LastError() != nil {
@@ -66,7 +68,7 @@ func GetNodeWithConfig(config *Config, nodeId string, ndType string) (cfacade.IN
 		for i := 0; i < typeJson.Size(); i++ {
 			item := typeJson.GetConfig(i)
 
-			if nodeType != ndType {
+			if nodeType != ndType || !findNodeID(nodeId, item.GetConfig("node_id")) {
 				continue
 			}
 
@@ -86,6 +88,7 @@ func GetNodeWithConfig(config *Config, nodeId string, ndType string) (cfacade.IN
 	return nil, cerr.Errorf("ndType = %s not found.", ndType)
 }
 
+// findNodeID applies the three supported node_id representations.
 func findNodeID(nodeID string, nodeIDJson cfacade.ProfileJSON) bool {
 	configNodeID := nodeIDJson.ToString()
 	if configNodeID == nodeID {

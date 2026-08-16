@@ -1,13 +1,12 @@
 package cactor
 
 import (
+	cfacade "github.com/actorgo-game/actorgo/facade"
 	"strings"
 	"sync"
-
-	"github.com/actorgo-game/actorgo/ccode"
-	cfacade "github.com/actorgo-game/actorgo/facade"
 )
 
+// actorChild owns the runtime children of one top-level Actor.
 type actorChild struct {
 	thisActor   *Actor
 	childActors *sync.Map // key:childActorID, value:*actor
@@ -28,10 +27,10 @@ func (p *actorChild) onStop() {
 		return true
 	})
 
-	//p.childActors = nil
 	p.thisActor = nil
 }
 
+// Create starts a dynamic child and waits until its OnInit completes.
 func (p *actorChild) Create(childID string, handler cfacade.IActorHandler) (cfacade.IActor, error) {
 	if p.thisActor.path.IsChild() {
 		return nil, ErrForbiddenCreateChildActor
@@ -51,11 +50,16 @@ func (p *actorChild) Create(childID string, handler cfacade.IActorHandler) (cfac
 	}
 
 	p.childActors.Store(childID, childActor)
+	p.thisActor.system.wg.Add(1)
 	go childActor.run()
+	if err := <-childActor.initDone; err != nil {
+		return nil, err
+	}
 
 	return childActor, nil
 }
 
+// Get returns a child by its ID.
 func (p *actorChild) Get(childID string) (cfacade.IActor, bool) {
 	return p.GetActor(childID)
 }
@@ -69,10 +73,12 @@ func (p *actorChild) GetActor(childID string) (*Actor, bool) {
 	return nil, false
 }
 
+// Remove forgets a child after its shutdown path has completed.
 func (p *actorChild) Remove(childID string) {
 	p.childActors.Delete(childID)
 }
 
+// Each visits the currently registered children.
 func (p *actorChild) Each(fn func(cfacade.IActor)) {
 	p.childActors.Range(func(key, value any) bool {
 		if actor, found := value.(*Actor); found {
@@ -80,20 +86,4 @@ func (p *actorChild) Each(fn func(cfacade.IActor)) {
 		}
 		return true
 	})
-}
-
-func (p *actorChild) Call(childID, funcName string, args any) {
-	if childActor, found := p.Get(childID); found {
-		path := cfacade.NewChildPath("", p.thisActor.ActorID(), childID)
-		childActor.Call(path, funcName, args)
-	}
-}
-
-func (p *actorChild) CallWait(childID, funcName string, arg, reply any) int32 {
-	if childActor, found := p.Get(childID); found {
-		path := cfacade.NewChildPath("", p.thisActor.ActorID(), childID)
-		return childActor.CallWait(path, funcName, arg, reply)
-	}
-
-	return ccode.ActorCallFail
 }

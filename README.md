@@ -1,133 +1,124 @@
-# 🍒 欢迎使用 actorgo！
+# ActorGo
 
-![actorgo logo](https://img.shields.io/badge/actorgo--game-actorgo-red)
-![actorgo license](https://img.shields.io/github/license/actorgo-game/actorgo)
-![go version](https://img.shields.io/github/go-mod/go-version/actorgo-game/actorgo)
-![actorgo tag](https://img.shields.io/github/v/tag/actorgo-game/actorgo)
+ActorGo 是 Go Actor 游戏服务端框架。当前协议为 AGP/1：Packet / ClusterMessage 固定 Protobuf，业务 Body 支持 JSON/PB；客户端交互只有 Request、Response、Notify。
 
-- 高性能分布式的 Golang 游戏服务器框架
-- 采用 Golang + Actor Model 构建，具备高性能、可伸缩等特性
-- 简单易学，让开发者更专注于游戏业务开发
+更完整的近期变更说明见：[_docs/api-changes-2026-07.md](_docs/api-changes-2026-07.md)。
 
-## 📢 重要更新
+## 本次改造要点
 
-- **新增 Actor model 实现**
-- **新增 simple 网络数据包结构**（id(4bytes) + dataLen(4bytes) + data(n bytes)）
-- **示例代码**：[examples](https://github.com/actorgo-game/actorgo-examples)
-- **官方网址**：https://1fun.net/
+- 删除 Pomelo/Simple 运行时与 `INetParser`
+- 稳定 Method ID + Typed Handler，取消 FuncName 反射调用
+- TCP：`uint32 big-endian length + Packet PB`
+- WebSocket：一条 Binary Message 对应一个 Packet，子协议 `agp.v1`
+- AGP / HTTP：客户端只提交 Method ID 和 Body，不接受 Actor Target
+- NATS：Protobuf `ClusterMessage`（`session` 使用 `Session`，无 SessionSnapshot）
+- AGP / HTTP / NATS 顶层调用共用 Actor 方法表；内部子 Actor 使用 ActorPath
+- 单一 mailbox；底层 `Post` 不再暴露为业务 API
+- Application 编解码收敛为 `BodyCodecs()` + `SetDefaultBodyCodec`
+- 旧 `Call` / `CallWait` / `CallType` 已由 `Invoke` / `Notify` 取代
 
-## 💬 讨论与交流
+不包含 Pomelo 兼容、gRPC 和 MessagePack。
 
-- 加入 QQ 群：[1093216864](https://qm.qq.com/q/rVcU7YS7eg)
+## Method 定义
 
-## 📖 示例
+业务 proto 使用标准 Protobuf：
 
-### 单节点精简版聊天室
+```proto
+service PlayerService {
+  rpc Login(LoginRequest) returns (LoginResponse);
+}
+```
 
-适合新手熟悉项目，具备以下特性：
+```bash
+protoc -I . \
+  --go_out=. --go_opt=paths=source_relative \
+  api/player.proto
+```
 
-- 基于网页客户端，构建 HTTP 服务器
-- 采用 WebSocket 作为连接器
-- 使用 JSON 作为通信格式
-- 实现创建房间、发送消息、广播消息等功能
+Actor 初始化时直接注册（无 error 返回值）：
 
-准备步骤：
+```go
+const LoginMethodID uint32 = 1001
 
-  * [环境安装与配置](https://actorgo-game.github.io/guides/install-go.html)
-  * 源码位置：[examples/demo_chat](https://github.com/actorgo-game/actorgo-examples/tree/master/demo_chat)
+func (a *PlayerActor) OnInit() {
+    a.Methods().Register(LoginMethodID, a.Login)
+}
 
-### 多节点分布式游戏示例
+func (a *PlayerActor) Login(
+    ctx *facade.RequestContext,
+    request *playerv1.LoginRequest,
+) (*playerv1.LoginResponse, error) {
+    return &playerv1.LoginResponse{}, nil
+}
+```
 
-适合作为基础框架构建游戏服务端，特性如下：
+- Request：`func(*RequestContext, *Request) (*Response, error)`
+- Notify：`func(*RequestContext, *Request) error`
+- 子 Actor 的 `Register` 只安装本地 mailbox，不写入外部方法表
 
-- 基于 H5 构建客户端
-- 搭建 Web 服、网关服、中心服、游戏服等节点
-- 实现区服列表、多 SDK 帐号体系、帐号注册、登录、创建角色等功能
+挂载 `httpactor` 后，所有顶层 Actor 的 `Methods().Register` 方法统一经 `POST /actor/{methodID}` 暴露。
 
-准备步骤：
+## 启动
 
-  * [环境安装与配置](https://actorgo-game.github.io/guides/install-go.html)
-  * 源码位置：[examples/demo_cluster](https://github.com/actorgo-game/actorgo-examples/tree/master/demo_cluster)
+```go
+app := actorgo.Configure(profileFilePath, nodeID, actorgo.Standalone)
 
-## 🌟 核心功能
+// 可选：切换默认 Body Codec（JSON 与 PB 始终同时注册）
+app.SetDefaultBodyCodec(cfacade.CodecJSON)
 
-### 组件管理
+app.AddActors(playerActor)
 
-- 以组件方式组合功能，便于统一管理生命周期
-- 支持自定义组件注册，灵活扩展
-- 可配置集群模式和单机模式
+app.Register(parser.New("client", []facade.IConnector{
+    connector.NewTCP(":9000"),
+    connector.NewWS(":9001"),
+}))
+app.Register(httpactor.NewComponent("actor-api", "127.0.0.1:9080"))
+app.Startup()
+```
 
-### 环境配置
+## 跨节点调用
 
-- 支持多环境参数配置切换
-- 基于 profile 文件配置系统和组件参数
-- 可自由拆分或组装 profile 子文件，精简配置
+```go
+ctx := cfacade.NewRequestContext(context.Background())
+ctx.Codec = cfacade.CodecProtobuf
+// 需要玩家上下文时再设置 ctx.Session
+result := app.ActorSystem().InvokeNode(ctx, "center-1", methodID, req)
+```
 
-### Actor 模型
+本节点顶层方法使用 `Invoke(ctx, methodID, req)`；跨节点顶层方法使用
+`InvokeNode(ctx, nodeID, methodID, req)`。完整 ActorPath 仅用于服务端内部的
+`InvokeTarget` / `NotifyTarget`，客户端 AGP/HTTP 都不能指定 target。
 
-- 个 Actor 独立运行于一个 goroutine，逻辑串行处理
-- 接收本地、远程、事件三种消息，各自有独立队列按 FIFO 原则消费
-- 可创建子 Actor，消息由父 Actor 路由转发
-- 支持跨节点 Actor 通信
+## curl JSON
 
-### 集群 & 注册发现
+```bash
+curl -X POST "http://127.0.0.1:9080/actor/1001" \
+  -H "Content-Type: application/json" \
+  -H "X-ActorGo-Timeout-Ms: 3000" \
+  -d '{"account":"demo"}'
+```
 
-- 提供三种发现服务实现方式
-- 基于 nats.io 实现 RPC 调用，提供同步 / 异步方式
+PB 调用将 `Content-Type` 改为 `application/x-protobuf`，并使用 `--data-binary @request.pb`。
 
-### 连接器
+Notify 方法成功返回 HTTP 202；错误 Body 为 `HTTPError`。完整 Header/状态码见 [HTTP 文档](_docs/http-actor.md)。
 
-- 支持 tcp、websocket、http server、http client 等
-- kcp 组件计划后续集成
+## 与现有 Gin 共存
 
-### 消息 & 路由
+```go
+actorHandler := httpactor.NewHandler(app)
+if err := httpServer.RegisterActorRoutes(actorHandler); err != nil {
+    panic(err)
+}
+```
 
-- 实现多种网络数据包结构及编解码
-- 支持消息路由、序列化（json/protobuf）、事件处理
+## 文档与验证
 
-### 日志
+- [近期变更汇总](_docs/api-changes-2026-07.md)
+- [HTTP 调用 Actor](_docs/http-actor.md)
+- [AGP/1 协议设计](_docs/agp-protobuf-protocol-design.md)
+- [开发计划与完成状态](_docs/agp-protobuf-development-plan.md)
 
-- 基于 uber zap 封装，性能优良
-- 支持多文件输出、日志切割等功能
-
-## 🧰 扩展组件
-
-### 已开放组件
-
-  * **data-config 组件** ：策划配表读取管理，支持多种加载方式及数据查询
-  * **etcd 组件** ：基于 etcd 封装，用于节点集群和注册发现
-  * **gin 组件** ：集成 gin 实现 http server 功能，增加管理周期和中间件组件
-  * **gorm 组件** ：集成 gorm 实现 mysql 数据库访问，支持多数据库配置
-  * **mongo 组件** ：集成 mongo-driver，支持多 mongodb 数据库配置
-  * **cron 组件** ：基于 robfig/cron 封装，性能良好
-
-### 待开放组件
-
-- db 队列、gopher-lua 脚本、限流组件等
-
-## 🎮 游戏客户端 SDK
-
-### 通信协议格式
-
-  * [协议结构图](_docs/pomelo-protocol.jpg)
-  * [pomelo wiki 协议格式](https://github.com/NetEase/pomelo/wiki/%E5%8D%8F%E8%AE%AE%E6%A0%BC%E5%BC%8F)
-
-### 各平台客户端
-
-  * **unity3d** ：[YMoonRiver/Pomelo_UnityWebSocket](https://github.com/YMoonRiver/Pomelo_UnityWebSocket-2.7.0)、[NetEase/pomelo-unityclient](https://github.com/NetEase/pomelo-unityclient) 等
-  * **cocos2dx** ：[NetEase/pomelo-cocos2dchat](https://github.com/NetEase/pomelo-cocos2dchat)
-  * **Javascript** ：[pomelonode/pomelo-jsclient-websocket](https://github.com/pomelonode/pomelo-jsclient-websocket) 等
-  * **C** ：[topfreegames/libpitaya](https://github.com/topfreegames/libpitaya)、[NetEase/libpomelo](https://github.com/NetEase/libpomelo/) 等
-  * **iOS** ：[NetEase/pomelo-iosclient](https://github.com/NetEase/pomelo-iosclient) 等
-  * **Android & Java** ：[NetEase/pomelo-androidclient](https://github.com/NetEase/pomelo-androidclient) 等
-  * **微信** ：[wangsijie/pomelo-weixin-client](https://github.com/wangsijie/pomelo-weixin-client)
-
-## 🗺️ 游戏服务端架构示例
-
-![game-server-architecture](_docs/game-server-architecture.jpg)
-
-## 🙏 致谢
-
-- [pomelo](https://github.com/NetEase/pomelo)
-- [pitaya](https://github.com/topfreegames/pitaya)
-- [cherry](https://github.com/cherry-game/cherry)
+```bash
+go test ./net/proto ./net/serializer ./net/method \
+  ./net/parser ./net/httpactor ./net/actor ./net/connector
+```
