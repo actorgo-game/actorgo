@@ -16,7 +16,20 @@ var (
 	requestTimeout time.Duration = 2 * time.Second // request timeout
 )
 
+// IsReady reports whether the shared NATS connection pool has been created.
+func IsReady() bool {
+	return connectSize > 0 && len(connectPool) > 0
+}
+
+// NewPool creates the shared NATS connection pool once. Later callers (e.g. NATS
+// discovery after RabbitMQ cluster transport) are no-ops so ownership can be
+// cluster-first or discovery-first without double dial.
 func NewPool(replySubject string, config cfacade.ProfileJSON, isConnect bool) {
+	if IsReady() {
+		clog.Info("Nats connect pool already initialized, skip NewPool")
+		return
+	}
+
 	reconnectDelay = config.GetDuration("reconnect_delay", 1) * time.Second
 	requestTimeout = config.GetDuration("request_timeout", 1) * time.Second
 
@@ -56,6 +69,9 @@ func GetPool() []*Connect {
 }
 
 func GetConnect() *Connect {
+	if !IsReady() {
+		panic("nats connect pool is not initialized; call NewPool before GetConnect")
+	}
 	index := atomic.AddUint64(roundIndex, 1)
 	return connectPool[index%connectSize]
 }

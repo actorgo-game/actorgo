@@ -194,20 +194,20 @@ NATS 仍是当前 `ICluster` 实现；协议载体为 Protobuf `ClusterMessage`�
 
 ---
 
-## 10. 传输选型：NATS vs RabbitMQ（规划参考）
+## 10. 传输选型：NATS vs RabbitMQ
 
 Actor 层已抽象为 `ICluster.Publish/Request(ClusterMessage)`，换传输主要是新实现 + 配置，不必改业务 API。
 
-| 维度 | NATS（现状） | RabbitMQ |
+| 维度 | NATS（默认） | RabbitMQ |
 |------|--------------|----------|
 | 定位 | 轻量 subject 总线 | Exchange + Queue 中间件 |
-| Request/Reply | 原生好用 | 需 reply-to / correlation-id |
+| Request/Reply | 原生好用 | reply-to / correlation-id |
 | 延迟吞吐 | 通常更优 | 功能换复杂度 |
-| 持久化/ACK | Core 偏尽力；JetStream 更强 | 成熟 |
+| 持久化/ACK | Core 偏尽力；JetStream 更强 | 当前实现为尽力投递 |
 | 运维 | 轻 | 更重 |
-| ActorGo 适配成本 | 已完成 | 中等（新 cluster 实现） |
+| 配置 | `cluster.mode=nats`（默认） | `cluster.mode=rabbitmq` |
 
-建议：节点低延迟 RPC 继续 NATS；若公司统一 MQ / 强持久再加 `cluster.mode=rabbitmq`。Discovery 可与 Cluster 传输独立配置。
+建议：节点低延迟 RPC 继续 NATS；需要统一 MQ 时切 RabbitMQ。Discovery 与 Cluster 传输独立（`cluster.discovery.mode`）。配置与拓扑细节见 [rabbitmq-cluster.md](rabbitmq-cluster.md)。
 
 ---
 
@@ -222,6 +222,6 @@ Actor 层已抽象为 `ICluster.Publish/Request(ClusterMessage)`，换传输主�
 | Body Codec | `application.go`, `net/serializer/registry.go`, `facade/codec.go` |
 | AGP 连接 | `net/parser/connection.go` |
 | HTTP Actor | `net/httpactor/`，文档 `_docs/http-actor.md` |
-| 集群 | `net/cluster/nats_cluster/`, `net/proto/cluster_message.proto` |
+| 集群 | `net/cluster/nats_cluster/`, `net/cluster/rabbitmq_cluster/`, `net/proto/cluster_message.proto` |
 | 协议设计 | `_docs/agp-protobuf-protocol-design.md` |
 | 开发状态 | `_docs/agp-protobuf-development-plan.md` |

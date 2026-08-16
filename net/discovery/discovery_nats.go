@@ -65,7 +65,23 @@ func (m *DiscoveryNats) Load(app cfacade.IApplication) {
 	m.DiscoveryDefault.PreInit()
 	m.app = app
 	m.loadMember()
+	m.ensureNatsPool()
 	m.init()
+}
+
+// ensureNatsPool creates the shared NATS pool when cluster transport is not NATS
+// (e.g. cluster.mode=rabbitmq). If nats_cluster already called NewPool, this is a no-op.
+func (m *DiscoveryNats) ensureNatsPool() {
+	if cnats.IsReady() {
+		return
+	}
+	config := cprofile.GetConfig("cluster").GetConfig("nats")
+	if config.LastError() != nil {
+		panic("cluster->nats config not found (required when discovery.mode=nats)")
+	}
+	prefix := config.GetString("prefix", "node")
+	replySubject := fmt.Sprintf("actorgo-%s.discovery.reply.%s.%s", prefix, m.app.NodeType(), m.app.NodeID())
+	cnats.NewPool(replySubject, config, true)
 }
 
 func (m *DiscoveryNats) loadMember() {

@@ -73,7 +73,7 @@ Cluster：
 - NATS 使用 Protobuf ClusterMessage；
 - Request/Reply 和 Notify Publish；
 - deadline、Session（非 SessionSnapshot）、Metadata、Codec、code、message 透传；
-- 后续可按配置扩展其它 `ICluster` 实现（如 RabbitMQ），业务 API 不变。
+- 已支持按配置切换 `ICluster` 实现（NATS / RabbitMQ），业务 API 不变；见 [rabbitmq-cluster.md](rabbitmq-cluster.md)。
 
 ## 4. 清理
 

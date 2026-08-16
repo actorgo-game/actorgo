@@ -212,7 +212,7 @@ message ClusterMessage {
 - Session / Metadata / Codec / deadline / code / message 透传
 - 进出集群会 clone Session，避免共享可变 Data
 
-关于后续可选 RabbitMQ 传输，见 [变更汇总](api-changes-2026-07.md)。
+关于可选 RabbitMQ 传输，见 [rabbitmq-cluster.md](rabbitmq-cluster.md) 与 [变更汇总](api-changes-2026-07.md)。
 
 ## 10. 超时优先级
 
