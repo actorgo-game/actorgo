@@ -10,6 +10,8 @@ ActorGo 是一个面向实时游戏服务端的 Go Actor 框架。它用 Actor �
 
 [官网](https://1fun.net/) · [HTTP 文档](_docs/http-actor.md) · [AGP 协议](_docs/agp-protobuf-protocol-design.md)
 
+[欢迎加入QQ群](点击链接加入群聊【actorgo游戏开发群】：https://qm.qq.com/q/pdDA65eKnm)
+
 ## 为什么使用 ActorGo
 
 - **状态归属清晰**：每个 Actor 是一份可变状态的唯一所有者。
